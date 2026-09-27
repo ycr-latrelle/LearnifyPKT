@@ -6,7 +6,9 @@ import {
 
 import { auth } from "../config/firebase";
 
-const API_BASE_URL = "http://localhost:5166/api";
+const API_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL ||
+    "http://localhost:5166/api";
 
 async function handleResponse(response) {
     const data = await response.json();
