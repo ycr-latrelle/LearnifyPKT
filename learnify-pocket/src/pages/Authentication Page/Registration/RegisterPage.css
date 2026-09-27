@@ -1,0 +1,142 @@
+.register-page {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.register-page__error {
+    padding: 10px;
+    background: #e11d48;
+    color: #fff;
+    font-weight: 700;
+    font-size: 11px;
+    border: 2px solid #0f172a;
+    text-align: center;
+    text-transform: uppercase;
+    box-shadow: 2px 2px 0 0 #0f172a;
+}
+
+.register-page__field {
+    display: flex;
+    flex-direction: column;
+}
+
+.register-page__label {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 10px;
+    text-transform: uppercase;
+    color: #475569;
+    margin-bottom: 4px;
+}
+
+.register-page__input {
+    width: 100%;
+    padding: 10px;
+    background: #f1f5f9;
+    border: 2px solid #0f172a;
+    font-size: 12px;
+    font-weight: 700;
+    outline: none;
+    color: #0f172a;
+    box-sizing: border-box;
+}
+
+.register-page__input:focus {
+    border-color: #2563eb;
+}
+
+.register-page__strength {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.register-page__strength-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.register-page__strength-bar {
+    width: 100%;
+    height: 8px;
+    background: #e2e8f0;
+    border: 1px solid #0f172a;
+    display: flex;
+    gap: 2px;
+    padding: 1px;
+    box-sizing: border-box;
+}
+
+.register-page__strength-seg {
+    height: 100%;
+    flex: 1;
+    background: transparent;
+}
+
+.register-page__strength-seg.is-weak {
+    background: #f43f5e;
+}
+
+.register-page__strength-seg.is-fair {
+    background: #fbbf24;
+}
+
+.register-page__strength-seg.is-strong {
+    background: #10b981;
+}
+
+.register-page__btn {
+    width: 100%;
+    padding: 12px;
+    font-weight: 900;
+    font-size: 12px;
+    border: 2px solid #0f172a;
+    box-shadow: 3px 3px 0 0 #0f172a;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform 0.05s ease;
+    box-sizing: border-box;
+}
+
+.register-page__btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 0 #0f172a;
+}
+
+.register-page__btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.register-page__btn--primary {
+    background: #10b981;
+    color: #0f172a;
+}
+
+.register-page__btn--primary:hover {
+    background: #059669;
+}
+
+.register-page__footer {
+    padding-top: 8px;
+    border-top: 2px solid #e2e8f0;
+    text-align: center;
+}
+
+.register-page__link {
+    font-size: 12px;
+    font-weight: 700;
+    color: #2563eb;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+.register-page__link:hover {
+    text-decoration: underline;
+}

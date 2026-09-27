@@ -1,0 +1,36 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# ASP.NET
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Rider
+.idea/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Firebase / service account credentials
+serviceAccount.json
+firebase-adminsdk-*.json
+*-firebase-adminsdk-*.json
+
+# Local development
+appsettings.Development.local.json

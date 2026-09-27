@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Press+Start+2P&display=swap');
+@import "tailwindcss";
+
+/* Class-based dark mode (matches the design reference's `darkMode: 'class'`
+   strategy) instead of Tailwind v4's default prefers-color-scheme variant. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tailwind v4 theme extensions (replaces tailwind.config.js's `theme.extend`)
+   Colors mirror the "Learnify Pocket — Pixelated Workspace" design
+   reference 1:1 so every screen in the app shares one palette. */
+@theme {
+  --font-pixel: "Pixelify Sans", cursive, sans-serif;
+  --font-arcade: "Press Start 2P", cursive;
+  --shadow-pixel-sm: 2px 2px 0px 0px #0F172A;
+  --shadow-pixel-md: 4px 4px 0px 0px #0F172A;
+  --shadow-pixel-lg: 6px 6px 0px 0px #0F172A;
+  --shadow-pixel-dark: 4px 4px 0px 0px #000000;
+
+  --color-navy-50: #F8FAFC;
+  --color-navy-100: #F1F5F9;
+  --color-navy-800: #181825;
+  --color-navy-900: #0F0F1B;
+  --color-navy-950: #090911;
+
+  --color-pixelBlue-400: #38BDF8;
+  --color-pixelBlue-500: #0066FF;
+  --color-pixelBlue-600: #0044CC;
+
+  --color-pixelYellow-400: #FFD700;
+  --color-pixelYellow-500: #FFB800;
+
+  --color-pixelGreen-400: #00E676;
+  --color-pixelGreen-500: #00C853;
+
+  --color-pixelRed-500: #FF3355;
+
+  --color-pixelPurple-500: #8A2BE2;
+}
+
+body {
+  font-family: 'Pixelify Sans', cursive, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  background-color: #f1f5f9;
+}
+
+.dark body {
+  background-color: #090911;
+}
+
+/* Full-screen layout — no phone frame wrapper */
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}

@@ -1,0 +1,949 @@
+/* ==========================================================================
+   Learnify Pocket — Dashboard CSS
+   Pixel-art retro RPG student productivity UI.
+   Mobile-first.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   0. Design Tokens — mirrors the design reference's pixelBlue / pixelYellow /
+      pixelGreen / pixelPurple / pixelRed / navy palette, with a `.dark`
+      override so the whole dashboard responds to the app's theme toggle.
+   -------------------------------------------------------------------------- */
+:root {
+    --db-bg:           #f1f5f9;
+    --db-surface:      #ffffff;
+    --db-surface-alt:  #f1f5f9;
+    --db-hero:         #0f172a;
+    --db-text:         #0f172a;
+    --db-text-muted:   #475569;
+    --db-text-inverse: #ffffff;
+    --db-border:       #0f172a;
+    --db-shadow-sm:    2px 2px 0 0 #0f172a;
+    --db-shadow-md:    4px 4px 0 0 #0f172a;
+    --db-amber:        #FFD700;
+    --db-amber-dark:   #FFB800;
+    --db-blue:         #0066FF;
+    --db-blue-hover:   #0044CC;
+    --db-emerald:      #00E676;
+    --db-purple:       #8A2BE2;
+    --db-rose:         #FF3355;
+    --db-slate-700:    #334155;
+    --db-slate-800:    #1e293b;
+    --font-pixel:      "Pixelify Sans", cursive, sans-serif;
+    --font-arcade:     "Press Start 2P", cursive;
+}
+
+.dark {
+    --db-bg:           #090911;
+    --db-surface:      #0F0F1B;
+    --db-surface-alt:  #181825;
+    --db-text:         #F1F5F9;
+    --db-text-muted:   #94a3b8;
+    --db-border:       #1e293b;
+}
+
+
+/* --------------------------------------------------------------------------
+   1. Dashboard Screen (root layout — full-screen, no phone frame)
+   -------------------------------------------------------------------------- */
+.dashboard-screen {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--db-bg);
+    font-family: var(--font-pixel);
+    box-sizing: border-box;
+    color: var(--db-text);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.dashboard-screen::-webkit-scrollbar { display: none; }
+.dashboard-screen { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* padded content wrapper for all sections except header and menu */
+.dashboard-screen > *:not(.dashboard-header):not(.dashboard-menu-overlay) {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    max-width: 720px;
+    width: 100%;
+    box-sizing: border-box;
+    align-self: center;
+    margin-top: 0.875rem;
+}
+
+.dashboard-screen > *:last-child {
+    padding-bottom: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+@media (min-width: 600px) {
+    .dashboard-screen > *:not(.dashboard-header):not(.dashboard-menu-overlay) {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+}
+
+@media (min-width: 900px) {
+    .dashboard-screen > *:not(.dashboard-header):not(.dashboard-menu-overlay) {
+        padding-left: 2.5rem;
+        padding-right: 2.5rem;
+    }
+}
+
+
+/* --------------------------------------------------------------------------
+   2. Dashboard Header
+   -------------------------------------------------------------------------- */
+.dashboard-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    width: 100%;
+    background-color: var(--db-surface);
+    border-bottom: 4px solid var(--db-border);
+    box-shadow: var(--db-shadow-sm);
+    box-sizing: border-box;
+}
+
+.dashboard-header__inner {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    height: 3.5rem;
+    padding: 0 1rem;
+    max-width: 720px;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+@media (min-width: 600px) {
+    .dashboard-header__inner { padding: 0 2rem; }
+}
+
+@media (min-width: 900px) {
+    .dashboard-header__inner { padding: 0 2.5rem; }
+}
+
+.dashboard-header__logo {
+    justify-self: center;
+    font-family: var(--font-arcade);
+    font-size: 0.6875rem;
+    color: var(--db-text);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    user-select: none;
+}
+
+.dashboard-header__logo span {
+    color: var(--db-blue);
+}
+
+.dashboard-header__button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    background-color: var(--db-surface-alt);
+    border: 2px solid var(--db-border);
+    box-shadow: var(--db-shadow-sm);
+    color: var(--db-text);
+    cursor: pointer;
+    transition: transform 0.05s ease, box-shadow 0.05s ease;
+    flex-shrink: 0;
+}
+
+.dashboard-header__button--menu {
+    background-color: var(--db-amber);
+    color: var(--db-hero);
+    justify-self: start;
+}
+
+.dashboard-header__button--profile {
+    justify-self: end;
+}
+
+.dashboard-header__button:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+.dashboard-header__button:focus-visible {
+    outline: 2px solid var(--db-blue);
+    outline-offset: 2px;
+}
+
+
+/* --------------------------------------------------------------------------
+   3. Dashboard Menu (slide-in overlay)
+   -------------------------------------------------------------------------- */
+@keyframes menuSlideIn {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(0); }
+}
+
+@keyframes menuSlideOut {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-100%); }
+}
+
+@keyframes backdropIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes backdropOut {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+
+.dashboard-menu-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    pointer-events: none;
+}
+
+.dashboard-menu-overlay--open {
+    pointer-events: auto;
+}
+
+.dashboard-menu__backdrop {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.55);
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    opacity: 0;
+    animation: backdropOut 0.25s ease forwards;
+}
+
+.dashboard-menu-overlay--open .dashboard-menu__backdrop {
+    animation: backdropIn 0.25s ease forwards;
+}
+
+.dashboard-menu {
+    width: 75%;
+    max-width: 280px;
+    height: 100%;
+    background-color: var(--db-surface);
+    border-right: 4px solid var(--db-border);
+    box-shadow: 6px 0 0 0 var(--db-border);
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    padding: 1.25rem;
+    gap: 0;
+    color: var(--db-text);
+    transform: translateX(-100%);
+    animation: menuSlideOut 0.25s ease forwards;
+    /*
+     * The menu itself no longer scrolls as one block — only the
+     * nav list (below) does. This keeps the header and the footer
+     * (theme toggle + Logout) always pinned on screen, even on
+     * short mobile viewports with many menu items.
+     */
+    overflow: hidden;
+}
+
+.dashboard-menu-overlay--open .dashboard-menu {
+    animation: menuSlideIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dashboard-menu,
+    .dashboard-menu__backdrop {
+        animation: none !important;
+        transform: none !important;
+        opacity: 1 !important;
+    }
+    .dashboard-menu-overlay { pointer-events: none; }
+    .dashboard-menu-overlay--open { pointer-events: auto; }
+}
+
+.dashboard-menu__content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.dashboard-menu__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 0.75rem;
+    border-bottom: 4px solid var(--db-border);
+}
+
+.dashboard-menu__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--db-text);
+    font-family: var(--font-arcade);
+    font-size: 0.625rem;
+    text-transform: uppercase;
+}
+
+.dashboard-menu__avatar {
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    line-height: 1;
+    background-color: var(--db-amber);
+    color: var(--db-hero);
+    border: 2px solid var(--db-border);
+}
+
+.dashboard-menu__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem;
+    background: none;
+    border: none;
+    color: var(--db-text);
+    cursor: pointer;
+    transition: color 0.1s ease;
+}
+
+.dashboard-menu__close:hover { color: var(--db-rose); }
+
+.dashboard-menu__navigation {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.dashboard-menu__item {
+    width: 100%;
+    padding: 0.625rem;
+    background-color: var(--db-surface-alt);
+    border: 2px solid var(--db-border);
+    box-shadow: var(--db-shadow-sm);
+    color: var(--db-text);
+    font-family: var(--font-pixel);
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 0.05s ease, box-shadow 0.05s ease;
+}
+
+.dashboard-menu__item-content {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+.dashboard-menu__item:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+.dashboard-menu__item--active {
+    background-color: var(--db-blue);
+    border-color: var(--db-border);
+    color: var(--db-text-inverse);
+}
+
+.dashboard-menu__footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.dashboard-menu__theme-toggle {
+    width: 100%;
+    padding: 0.625rem;
+    background-color: var(--db-surface-alt);
+    color: var(--db-text);
+    font-family: var(--font-pixel);
+    font-weight: 900;
+    font-size: 0.6875rem;
+    border: 2px solid var(--db-border);
+    box-shadow: var(--db-shadow-sm);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform 0.05s ease, box-shadow 0.05s ease;
+}
+
+.dashboard-menu__theme-toggle:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+.dashboard-menu__logout {
+    width: 100%;
+    padding: 0.625rem 1rem;
+    background-color: var(--db-rose);
+    color: var(--db-text-inverse);
+    font-family: var(--font-pixel);
+    font-weight: 900;
+    font-size: 0.6875rem;
+    border: 2px solid var(--db-border);
+    box-shadow: var(--db-shadow-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.05s ease, box-shadow 0.05s ease;
+}
+
+.dashboard-menu__logout:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+
+/* --------------------------------------------------------------------------
+   4. Player Profile Card (hero band, sits flush under header)
+   -------------------------------------------------------------------------- */
+.player-profile-card {
+    background-color: var(--db-hero);
+    color: var(--db-text-inverse);
+    border: 3px solid var(--db-border);
+    border-radius: 0;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    box-sizing: border-box;
+    box-shadow: var(--db-shadow-md);
+}
+
+.player-profile-card__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.player-profile-card__badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: var(--db-amber);
+    color: var(--db-hero);
+    font-family: var(--font-arcade);
+    font-size: 0.5rem;
+    border: 2px solid var(--db-hero);
+    text-transform: uppercase;
+    line-height: 1.6;
+}
+
+.player-profile-card__title {
+    margin: 0.375rem 0 0;
+    font-size: 1.125rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    color: var(--db-text-inverse);
+}
+
+.player-profile-card__streak {
+    flex-shrink: 0;
+    padding: 0.375rem 0.75rem;
+    background-color: var(--db-purple);
+    color: var(--db-amber);
+    font-weight: 900;
+    font-size: 0.6875rem;
+    border: 2px solid var(--db-border);
+    box-shadow: var(--db-shadow-sm);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.player-profile-card__progress-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.player-profile-card__progress-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.5rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #cbd5e1;
+    font-family: var(--font-arcade);
+}
+
+.player-profile-card__progress-track {
+    width: 100%;
+    height: 1rem;
+    background-color: #1e293b;
+    border: 2px solid #334155;
+    padding: 2px;
+    box-sizing: border-box;
+}
+
+.player-profile-card__progress-fill {
+    height: 100%;
+    background-color: var(--db-emerald);
+    border: 1px solid var(--db-border);
+    transition: width 0.5s ease;
+}
+
+.player-profile-card__footer {
+    padding-top: 0.5rem;
+    border-top: 2px solid #1e293b;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.player-profile-card__prompt {
+    font-size: 0.5rem;
+    font-family: var(--font-arcade);
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+/* shared pixel button */
+.pixel-button {
+    padding: 0.5rem 0.875rem;
+    font-family: var(--font-pixel);
+    font-weight: 900;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    border: 2px solid var(--db-border);
+    box-shadow: var(--db-shadow-sm);
+    cursor: pointer;
+    transition: background-color 0.1s ease, transform 0.05s ease, box-shadow 0.05s ease;
+    white-space: nowrap;
+}
+
+.pixel-button:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 0 var(--db-border);
+}
+
+.pixel-button:focus-visible {
+    outline: 2px solid #60a5fa;
+    outline-offset: 2px;
+}
+
+.pixel-button--blue {
+    background-color: var(--db-blue);
+    color: var(--db-text-inverse);
+}
+
+.pixel-button--blue:hover { background-color: var(--db-blue-hover); }
+
+
+/* --------------------------------------------------------------------------
+   5. Quick Stats Grid
+   -------------------------------------------------------------------------- */
+.quick-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.625rem;
+}
+
+.quick-stat-card {
+    padding: 0.75rem 0.5rem;
+    background-color: var(--db-surface);
+    border: 3px solid var(--db-border);
+    box-shadow: var(--db-shadow-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: pointer;
+    font-family: var(--font-pixel);
+    transition: transform 0.05s ease, box-shadow 0.05s ease;
+    width: 100%;
+    box-sizing: border-box;
+    color: var(--db-text);
+}
+
+.quick-stat-card:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 0 var(--db-border);
+}
+
+.quick-stat-card:focus-visible {
+    outline: 2px solid var(--db-blue);
+    outline-offset: 2px;
+}
+
+.quick-stat-card__label {
+    font-family: var(--font-arcade);
+    font-size: 0.5rem;
+    text-transform: uppercase;
+    color: var(--db-text-muted);
+    line-height: 1;
+}
+
+.quick-stat-card__value {
+    font-size: 1.125rem;
+    font-weight: 900;
+    color: var(--db-text);
+    line-height: 1;
+}
+
+@media (max-width: 359px) {
+    .quick-stat-card        { padding: 0.5rem 0.25rem; }
+    .quick-stat-card__label { font-size: 0.4375rem; }
+    .quick-stat-card__value { font-size: 1rem; }
+}
+
+
+/* --------------------------------------------------------------------------
+   6. Study Assets Banner
+   -------------------------------------------------------------------------- */
+.study-assets-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1rem;
+    background-color: var(--db-amber);
+    color: var(--db-hero);
+    border: 3px solid var(--db-border);
+    box-shadow: var(--db-shadow-md);
+    box-sizing: border-box;
+}
+
+.study-assets-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.study-assets-label {
+    align-self: flex-start;
+    padding: 0.125rem 0.5rem;
+    background-color: var(--db-hero);
+    color: var(--db-text-inverse);
+    font-family: var(--font-arcade);
+    font-size: 0.5rem;
+    line-height: 1.6;
+    white-space: nowrap;
+}
+
+.study-assets-title {
+    margin: 0;
+    font-family: var(--font-pixel);
+    font-size: 0.875rem;
+    font-weight: 900;
+    line-height: 1.2;
+    text-transform: uppercase;
+    color: var(--db-hero);
+}
+
+.study-assets-description {
+    margin: 0;
+    font-family: var(--font-pixel);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #1e293b;
+}
+
+.study-assets-upload-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    flex-shrink: 0;
+    padding: 0.625rem 1rem;
+    background-color: var(--db-hero);
+    color: var(--db-text-inverse);
+    border: 2px solid var(--db-border);
+    box-shadow: var(--db-shadow-sm);
+    font-family: var(--font-pixel);
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.study-assets-upload-button:hover  { background-color: #1e293b; }
+.study-assets-upload-button:active { transform: translate(2px, 2px); box-shadow: none; }
+
+.study-assets-upload-button:focus-visible {
+    outline: 3px solid var(--db-blue);
+    outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+    .study-assets-banner         { align-items: stretch; }
+    .study-assets-upload-button  { padding: 0.625rem 0.75rem; }
+    .study-assets-description    { font-size: 0.7rem; }
+}
+
+
+/* --------------------------------------------------------------------------
+   7. Daily Quests
+   -------------------------------------------------------------------------- */
+.daily-quests {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+}
+
+.daily-quests__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.daily-quests__title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.daily-quests__title {
+    font-size: 0.6875rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--db-text-muted);
+}
+
+.daily-quests__percentage {
+    padding: 1px 6px;
+    background-color: var(--db-surface-alt);
+    border: 1px solid var(--db-border);
+    font-size: 0.5625rem;
+    font-weight: 900;
+    color: var(--db-text-muted);
+}
+
+.daily-quests__add-button {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: var(--font-pixel);
+    font-weight: 900;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    color: var(--db-blue);
+    cursor: pointer;
+    line-height: 1;
+}
+
+.daily-quests__add-button:hover { text-decoration: underline; }
+
+.daily-quests__list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   8. Quest Filters
+   -------------------------------------------------------------------------- */
+.quest-filters {
+    display: flex;
+    gap: 0.375rem;
+}
+
+.quest-filter {
+    padding: 0.25rem 0.625rem;
+    background-color: var(--db-surface-alt);
+    border: 2px solid var(--db-border);
+    font-family: var(--font-pixel);
+    font-size: 0.5625rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: var(--db-text-muted);
+    cursor: pointer;
+    transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.quest-filter:hover { background-color: var(--db-surface); color: var(--db-text); }
+
+.quest-filter--active {
+    background-color: var(--db-hero);
+    color: var(--db-text-inverse);
+    border-color: var(--db-hero);
+}
+
+.quest-filter--active:hover {
+    background-color: var(--db-slate-800);
+    color: var(--db-text-inverse);
+}
+
+
+/* --------------------------------------------------------------------------
+   9. Quest Form
+   -------------------------------------------------------------------------- */
+.quest-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: stretch;
+}
+
+.quest-form__input {
+    flex: 1;
+    padding: 0.625rem 0.75rem;
+    background-color: var(--db-surface);
+    border: 2px solid var(--db-border);
+    font-family: var(--font-pixel);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--db-text);
+    outline: none;
+    box-sizing: border-box;
+    min-width: 0;
+}
+
+.quest-form__input:focus         { border-color: var(--db-blue); }
+.quest-form__input::placeholder  { color: var(--db-text-muted); font-weight: 400; }
+
+.quest-form__save {
+    flex-shrink: 0;
+    padding: 0.625rem 0.875rem;
+    background-color: var(--db-hero);
+    color: var(--db-text-inverse);
+    border: 2px solid var(--db-border);
+    box-shadow: var(--db-shadow-sm);
+    font-family: var(--font-pixel);
+    font-size: 0.6875rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.1s ease, transform 0.05s ease, box-shadow 0.05s ease;
+}
+
+.quest-form__save:hover  { background-color: var(--db-slate-800); }
+.quest-form__save:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 0 var(--db-border); }
+
+
+/* --------------------------------------------------------------------------
+   10. Quest Item
+   -------------------------------------------------------------------------- */
+.quest-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    background-color: var(--db-surface);
+    border: 3px solid var(--db-border);
+    box-shadow: var(--db-shadow-md);
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.quest-item__main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    min-width: 0;
+    font-family: var(--font-pixel);
+    transition: background-color 0.1s ease;
+}
+
+.quest-item__main:hover { background-color: var(--db-surface-alt); }
+
+.quest-item__checkbox {
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid var(--db-border);
+    background-color: var(--db-surface-alt);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--db-hero);
+}
+
+.quest-item__checkbox--done { background-color: var(--db-emerald); }
+
+.quest-item__title {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--db-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.quest-item__title--done {
+    text-decoration: line-through;
+    color: var(--db-text-muted);
+}
+
+.quest-item__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding-right: 0.75rem;
+    flex-shrink: 0;
+}
+
+.quest-item__time {
+    font-size: 0.5rem;
+    font-weight: 900;
+    background-color: var(--db-surface-alt);
+    color: var(--db-text-muted);
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--db-border);
+    white-space: nowrap;
+}
+
+.quest-item__delete {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    background: none;
+    border: 2px solid transparent;
+    color: var(--db-text-muted);
+    cursor: pointer;
+    transition: color 0.1s ease, border-color 0.1s ease, background-color 0.1s ease;
+    flex-shrink: 0;
+}
+
+.quest-item__delete:hover  { color: var(--db-rose); border-color: var(--db-rose); background-color: #fff1f2; }
+.quest-item__delete:active { background-color: #ffe4e6; }
+
+
+/* --------------------------------------------------------------------------
+   11. Empty Quest State
+   -------------------------------------------------------------------------- */
+.empty-quest-state {
+    padding: 1.5rem;
+    text-align: center;
+    background-color: var(--db-surface);
+    border: 2px solid var(--db-border);
+    box-shadow: var(--db-shadow-sm);
+}
+
+.empty-quest-state p {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--db-text-muted);
+}

@@ -1,0 +1,159 @@
+.login-page {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.login-page__error {
+    padding: 10px;
+    background: #e11d48;
+    color: #fff;
+    font-weight: 700;
+    font-size: 11px;
+    border: 2px solid #0f172a;
+    text-align: center;
+    text-transform: uppercase;
+    box-shadow: 2px 2px 0 0 #0f172a;
+}
+
+.login-page__field {
+    display: flex;
+    flex-direction: column;
+}
+
+.login-page__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.login-page__label {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 10px;
+    text-transform: uppercase;
+    color: #475569;
+    margin-bottom: 4px;
+}
+
+.login-page__link {
+    font-size: 10px;
+    font-weight: 700;
+    color: #2563eb;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+.login-page__link:hover {
+    text-decoration: underline;
+}
+
+.login-page__input {
+    width: 100%;
+    padding: 10px;
+    background: #f1f5f9;
+    border: 2px solid #0f172a;
+    font-size: 12px;
+    font-weight: 700;
+    outline: none;
+    color: #0f172a;
+    box-sizing: border-box;
+}
+
+.login-page__input:focus {
+    border-color: #2563eb;
+}
+
+.login-page__password-wrap {
+    position: relative;
+}
+
+.login-page__password-wrap .login-page__input {
+    padding-right: 40px;
+}
+
+.login-page__eye-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.login-page__eye-btn:hover {
+    color: #0f172a;
+}
+
+.login-page__btn {
+    width: 100%;
+    padding: 12px;
+    font-weight: 900;
+    font-size: 12px;
+    border: 2px solid #0f172a;
+    box-shadow: 3px 3px 0 0 #0f172a;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform 0.05s ease;
+    box-sizing: border-box;
+}
+
+.login-page__btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 0 #0f172a;
+}
+
+.login-page__btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.login-page__btn--primary {
+    background: #2563eb;
+    color: #fff;
+}
+
+.login-page__btn--primary:hover {
+    background: #1d4ed8;
+}
+
+.login-page__btn--google {
+    background: #f1f5f9;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.login-page__btn--google:hover {
+    background: #e2e8f0;
+}
+
+.login-page__btn--accent {
+    background: #fbbf24;
+    color: #0f172a;
+}
+
+.login-page__btn--accent:hover {
+    background: #f59e0b;
+}
+
+.login-page__footer {
+    padding-top: 12px;
+    border-top: 2px solid #e2e8f0;
+    text-align: center;
+}
+
+.login-page__footer-text {
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+    margin: 0 0 8px 0;
+}
