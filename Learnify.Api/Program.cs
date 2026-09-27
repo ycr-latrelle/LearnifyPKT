@@ -6,43 +6,58 @@ using Resend;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ========================================
+// CORS
+// ========================================
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("LearnifyFrontend", policy =>
     {
         policy
-            .WithOrigins("http://localhost:5173")
+            .WithOrigins(
+                "http://localhost:5173",
+                "https://learnify-pkt.vercel.app"
+            )
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
 });
 
-var firebaseCredentialsPath = Path.Combine(
-    builder.Environment.ContentRootPath,
-    "secrets",
-    "service-account.json"
-);
+// ========================================
+// Firebase
+// ========================================
 
-if (!File.Exists(firebaseCredentialsPath))
-{
-    throw new FileNotFoundException(
-        "Firebase service account file was not found.",
-        firebaseCredentialsPath
-    );
-}
+var firebaseServiceAccount =
+    builder.Configuration["FIREBASE_SERVICE_ACCOUNT"];
 
-var firebaseCredential = CredentialFactory
-    .FromFile<ServiceAccountCredential>(
-        firebaseCredentialsPath
-    )
-    .ToGoogleCredential();
+var serviceAccountCredential =
+    !string.IsNullOrWhiteSpace(firebaseServiceAccount)
+        ? CredentialFactory
+            .FromJson<ServiceAccountCredential>(
+                firebaseServiceAccount
+            )
+        : CredentialFactory
+            .FromFile<ServiceAccountCredential>(
+                Path.Combine(
+                    builder.Environment.ContentRootPath,
+                    "secrets",
+                    "service-account.json"
+                )
+            );
+
+var firebaseCredential =
+    serviceAccountCredential.ToGoogleCredential();
 
 FirebaseApp.Create(new AppOptions
 {
     Credential = firebaseCredential
 });
 
+// ========================================
 // Firestore
+// ========================================
+
 var firestoreDb = new FirestoreDbBuilder
 {
     ProjectId = "learnifypkt",
@@ -51,8 +66,16 @@ var firestoreDb = new FirestoreDbBuilder
 
 builder.Services.AddSingleton(firestoreDb);
 
+// ========================================
+// Services
+// ========================================
+
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
+
+// ========================================
+// Resend
+// ========================================
 
 builder.Services.AddOptions<ResendClientOptions>()
     .Configure(options =>
@@ -66,12 +89,20 @@ builder.Services.AddOptions<ResendClientOptions>()
 
 builder.Services.AddTransient<IResend, ResendClient>();
 
+// ========================================
+// Authentication Services
+// ========================================
+
 builder.Services.AddScoped<
     Learnify.Api.Services.Authentication.IAuthenticationService,
     FirebaseAuthenticationService
 >();
 
 builder.Services.AddScoped<IEmailOtpService, EmailOtpService>();
+
+// ========================================
+// Firebase Authentication
+// ========================================
 
 builder.Services.AddAuthentication("Firebase")
     .AddScheme<
@@ -84,7 +115,15 @@ builder.Services.AddAuthentication("Firebase")
 
 builder.Services.AddAuthorization();
 
+// ========================================
+// Build Application
+// ========================================
+
 var app = builder.Build();
+
+// ========================================
+// Middleware
+// ========================================
 
 app.UseHttpsRedirection();
 
