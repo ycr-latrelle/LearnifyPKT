@@ -6,7 +6,13 @@ import { auth } from "../config/firebase";
 
 const AuthContext = createContext(null);
 
-const API_BASE_URL = "http://localhost:5166/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+console.log("AuthContext API_BASE_URL:", API_BASE_URL);
+
+if (!API_BASE_URL) {
+  throw new Error("VITE_API_BASE_URL is not configured.");
+}
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -52,9 +58,6 @@ export const AuthProvider = ({ children }) => {
         /*
          * If the API rejects the token,
          * do NOT immediately sign out Firebase.
-         *
-         * Log the problem so we can diagnose
-         * the backend authentication configuration.
          */
         if (!response.ok) {
           const errorText = await response.text();
@@ -157,6 +160,7 @@ export const AuthProvider = ({ children }) => {
       await signOut(auth);
     } catch (error) {
       console.error("Logout failed:", error);
+
       setUser(null);
     }
   };
