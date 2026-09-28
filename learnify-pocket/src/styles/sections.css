@@ -2008,3 +2008,325 @@
         color: #091540;
     }
 }
+
+/* --------------------------------------------------------------------------
+   Upload / AI Generation Progress
+   -------------------------------------------------------------------------- */
+
+.upload-generation-progress {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+    gap: 0.875rem;
+    box-sizing: border-box;
+}
+
+.upload-generation-progress__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    margin: 0 auto;
+
+    background-color: var(--db-amber);
+    border: 3px solid var(--db-border);
+    box-shadow: var(--db-shadow-sm);
+
+    color: #091540;
+}
+
+.upload-generation-progress__spinner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 1.5rem;
+    line-height: 1;
+
+    animation:
+        upload-generation-pulse
+        1s
+        steps(2, end)
+        infinite;
+}
+
+.upload-generation-progress__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.upload-generation-progress__title {
+    margin: 0;
+    min-width: 0;
+
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: var(--db-text);
+
+    overflow-wrap: anywhere;
+}
+
+.upload-generation-progress__percentage {
+    flex-shrink: 0;
+
+    font-family: var(--font-arcade);
+    font-size: 0.6875rem;
+    font-weight: 900;
+
+    color: var(--db-blue);
+}
+
+.upload-generation-progress__track {
+    position: relative;
+
+    width: 100%;
+    height: 1rem;
+
+    padding: 2px;
+
+    background-color: var(--db-surface-alt);
+    border: 2px solid var(--db-border);
+
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.upload-generation-progress__fill {
+    height: 100%;
+    min-width: 0;
+
+    background-color: var(--db-blue);
+
+    transition:
+        width 0.3s ease;
+
+    box-shadow:
+        inset -2px 0 0 0 rgba(255, 255, 255, 0.25);
+}
+
+.upload-generation-progress__details {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+
+    min-width: 0;
+
+    font-size: 0.5625rem;
+    font-weight: 700;
+    color: var(--db-text-muted);
+    line-height: 1.4;
+}
+
+.upload-generation-progress__details span:first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.upload-generation-progress__details span:last-child {
+    flex-shrink: 0;
+}
+
+.upload-generation-progress__steps {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.25rem;
+    width: 100%;
+}
+
+.upload-generation-progress__step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+
+    min-width: 0;
+    padding: 0.375rem 0.125rem;
+
+    background-color: var(--db-surface-alt);
+    border: 1px solid var(--db-border);
+
+    color: var(--db-text-muted);
+
+    box-sizing: border-box;
+
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.upload-generation-progress__step span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 1.25rem;
+    height: 1.25rem;
+
+    border: 1px solid var(--db-border);
+
+    font-size: 0.5rem;
+    font-weight: 900;
+}
+
+.upload-generation-progress__step small {
+    max-width: 100%;
+
+    font-family: var(--font-arcade);
+    font-size: 0.35rem;
+
+    text-align: center;
+    line-height: 1.2;
+
+    overflow-wrap: anywhere;
+}
+
+.upload-generation-progress__step--active {
+    background-color: #92eeff;
+    border-color: #091540;
+    color: #091540;
+}
+
+.upload-generation-progress__step--active span {
+    border-color: #091540;
+    background-color: #091540;
+    color: #ffffff;
+}
+
+.upload-generation-progress__message {
+    margin: 0;
+
+    padding: 0.75rem;
+
+    background-color: var(--db-surface-alt);
+    border: 2px solid var(--db-border);
+
+    font-size: 0.625rem;
+    font-weight: 600;
+    line-height: 1.5;
+
+    color: var(--db-text-muted);
+
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+.upload-generation-progress__warning {
+    padding: 0.625rem 0.75rem;
+
+    border: 1px dashed var(--db-border);
+
+    font-family: var(--font-arcade);
+    font-size: 0.4rem;
+    line-height: 1.4;
+
+    text-align: center;
+    text-transform: uppercase;
+
+    color: var(--db-text-muted);
+}
+
+
+@keyframes upload-generation-pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.15);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+
+/* --------------------------------------------------------------------------
+   Mobile
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 639px) {
+
+    .upload-generation-progress {
+        gap: 0.75rem;
+    }
+
+    .upload-generation-progress__icon {
+        width: 3rem;
+        height: 3rem;
+    }
+
+    .upload-generation-progress__title {
+        font-size: 0.6875rem;
+    }
+
+    .upload-generation-progress__percentage {
+        font-size: 0.625rem;
+    }
+
+    .upload-generation-progress__track {
+        height: 0.875rem;
+    }
+
+    .upload-generation-progress__details {
+        font-size: 0.5rem;
+    }
+
+    .upload-generation-progress__step {
+        padding: 0.3125rem 0.0625rem;
+    }
+
+    .upload-generation-progress__step span {
+        width: 1.125rem;
+        height: 1.125rem;
+    }
+
+    .upload-generation-progress__step small {
+        font-size: 0.3rem;
+    }
+
+    .upload-generation-progress__message {
+        font-size: 0.5625rem;
+        padding: 0.625rem;
+    }
+
+    .upload-generation-progress__warning {
+        font-size: 0.35rem;
+    }
+}
+
+
+/* --------------------------------------------------------------------------
+   Very small phones
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 380px) {
+
+    .upload-generation-progress__steps {
+        gap: 0.125rem;
+    }
+
+    .upload-generation-progress__step {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .upload-generation-progress__step span {
+        width: 1rem;
+        height: 1rem;
+        font-size: 0.4rem;
+    }
+
+    .upload-generation-progress__step small {
+        font-size: 0.27rem;
+    }
+}
