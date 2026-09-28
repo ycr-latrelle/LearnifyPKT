@@ -71,9 +71,9 @@ export default function SubjectsPage() {
           type="button"
           className="pixel-fab-add subject-floating-add"
           onClick={() => setIsAddOpen(true)}
+          aria-label="Add subject"
         >
-          <DashboardIcon name="plus" size={12} />
-          <span>Add Subject</span>
+          <DashboardIcon name="pen" size={16} />
         </button>
       }
     >

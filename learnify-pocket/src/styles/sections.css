@@ -1326,43 +1326,41 @@
        Centered floating action panel.
        It sits above the mobile bottom navigation area.
     */
+    /*
+       Bottom-right floating action button — icon only.
+    */
     .subject-floating-add {
         position: fixed;
-        left: 50%;
+        right: 1.25rem;
         bottom: calc(4.75rem + env(safe-area-inset-bottom));
         z-index: 250;
 
-        width: min(88vw, 280px);
-        min-width: 0;
-
-        transform: translateX(-50%);
+        width: 3.25rem;
+        height: 3.25rem;
 
         display: flex;
         align-items: center;
         justify-content: center;
 
-        padding: 0.75rem 1rem;
+        padding: 0;
 
         background-color: var(--db-blue);
         color: var(--db-text-inverse);
 
         border: 3px solid var(--db-border);
+        border-radius: 50%;
         box-shadow:
             4px 4px 0 0 var(--db-border);
 
-        font-size: 0.625rem;
-        text-align: center;
+        transform: none;
     }
 
     .subject-floating-add:hover {
-        transform: translateX(-50%);
+        transform: scale(1.08);
     }
 
     .subject-floating-add:active {
-        transform: translate(
-            calc(-50% + 2px),
-            2px
-        );
+        transform: translate(2px, 2px);
         box-shadow: none;
     }
 
@@ -1690,10 +1688,10 @@
 
     /* Floating Subject button */
     .subject-floating-add {
-        width: min(88vw, 250px);
+        right: 1rem;
         bottom: calc(4.5rem + env(safe-area-inset-bottom));
-        padding: 0.6875rem 0.875rem;
-        font-size: 0.5625rem;
+        width: 3rem;
+        height: 3rem;
     }
 
 
@@ -1804,6 +1802,7 @@
     }
 
     .subject-floating-add {
+        right: 0.875rem;
         bottom: calc(3.75rem + env(safe-area-inset-bottom));
     }
 }
