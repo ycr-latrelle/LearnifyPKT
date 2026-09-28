@@ -27,8 +27,11 @@ builder.Services.AddHttpClient<
                     IOptions<AIServiceOptions>>()
                 .Value;
 
+        var baseUrl =
+            options.BaseUrl.TrimEnd('/') + "/";
+
         client.BaseAddress =
-            new Uri(options.BaseUrl);
+            new Uri(baseUrl);
 
         client.Timeout =
             TimeSpan.FromMinutes(5);
