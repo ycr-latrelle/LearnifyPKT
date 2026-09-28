@@ -1,23 +1,23 @@
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../config/firebase";
+
+import {
+  getSubjects as getSubjectsApi,
+  createSubject as createSubjectApi,
+  updateSubject as updateSubjectApi,
+  deleteSubject as deleteSubjectApi,
+} from "../services/SubjectService";
 
 // ==================================================
 // STUDY DATA CONTEXT
 // ==================================================
-//
-// The API only exposes AuthController right now, so there is
-// nowhere to persist subjects/notes/flashcards/quizzes/practice
-// yet. This context is the frontend-only stand-in: it keeps the
-// study data in memory (starting empty — no mock/seed data) so
-// every screen has somewhere consistent to read from and write to.
-//
-// Swapping this out for real API calls later should only mean
-// changing the bodies of the functions below (addSubject, addNote,
-// etc.) to call the backend instead of setState, and loading the
-// initial arrays from the API on mount instead of starting empty.
 
 const StudyDataContext = createContext(undefined);
 
 let idCounter = 1000;
+
 function nextId() {
   idCounter += 1;
   return idCounter;
@@ -29,15 +29,22 @@ function colorForIndex(index) {
   return SUBJECT_COLORS[index % SUBJECT_COLORS.length];
 }
 
-// No seed/mock data: every list starts empty and is populated only by
-// real user actions (and, once wired up, real API responses). Every
-// screen that reads these already renders an EmptyState when empty.
 const INITIAL_SUBJECTS = [];
 const INITIAL_NOTES = [];
 const INITIAL_FLASHCARDS = [];
 const INITIAL_QUIZZES = [];
 const INITIAL_TASKS = [];
 const INITIAL_PRACTICE = [];
+
+function normalizeSubject(subject, index = 0) {
+  return {
+    ...subject,
+    id: subject.id,
+    name: subject.name || "Untitled Subject",
+    icon: subject.icon || "subjects",
+    color: subject.color || colorForIndex(index),
+  };
+}
 
 export function StudyDataProvider({ children }) {
   const [subjects, setSubjects] = useState(INITIAL_SUBJECTS);
@@ -47,27 +54,164 @@ export function StudyDataProvider({ children }) {
   const [tasks, setTasks] = useState(INITIAL_TASKS);
   const [practiceExercises, setPracticeExercises] = useState(INITIAL_PRACTICE);
 
-  // ---------- subjects ----------
-  const addSubject = ({ name, icon = "subjects" }) => {
-    const subject = {
-      id: nextId(),
-      name,
-      icon,
-      color: colorForIndex(subjects.length),
+  const [subjectsLoading, setSubjectsLoading] = useState(true);
+
+  const [subjectsError, setSubjectsError] = useState("");
+
+  // ==================================================
+  // SUBJECTS API
+  // ==================================================
+
+  const loadSubjects = async () => {
+    if (!auth.currentUser) {
+      setSubjects([]);
+      setSubjectsLoading(false);
+      return;
+    }
+
+    setSubjectsLoading(true);
+    setSubjectsError("");
+
+    try {
+      const data = await getSubjectsApi();
+
+      const normalizedSubjects = Array.isArray(data)
+        ? data.map((subject, index) => normalizeSubject(subject, index))
+        : [];
+
+      setSubjects(normalizedSubjects);
+    } catch (error) {
+      console.error("Failed to load subjects:", error);
+
+      setSubjectsError(error?.message || "Failed to load subjects.");
+    } finally {
+      setSubjectsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!isMounted) return;
+
+      if (!user) {
+        setSubjects([]);
+        setSubjectsError("");
+        setSubjectsLoading(false);
+        return;
+      }
+
+      setSubjectsLoading(true);
+      setSubjectsError("");
+
+      try {
+        const data = await getSubjectsApi();
+
+        if (!isMounted) return;
+
+        const normalizedSubjects = Array.isArray(data)
+          ? data.map((subject, index) => normalizeSubject(subject, index))
+          : [];
+
+        setSubjects(normalizedSubjects);
+      } catch (error) {
+        if (!isMounted) return;
+
+        console.error("Failed to load subjects:", error);
+
+        setSubjectsError(error?.message || "Failed to load subjects.");
+      } finally {
+        if (isMounted) {
+          setSubjectsLoading(false);
+        }
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
     };
-    setSubjects((prev) => [...prev, subject]);
-    return subject;
+  }, []);
+
+  // ---------- create subject ----------
+
+  const addSubject = async ({
+    name,
+    icon = "subjects",
+    color,
+    description,
+  }) => {
+    const fallbackColor = color || colorForIndex(subjects.length);
+
+    const payload = {
+      name: name.trim(),
+      description: description || null,
+      icon: icon || "subjects",
+      color: fallbackColor,
+    };
+
+    const createdSubject = await createSubjectApi(payload);
+
+    const normalizedSubject = normalizeSubject(createdSubject, subjects.length);
+
+    setSubjects((prev) => [...prev, normalizedSubject]);
+
+    return normalizedSubject;
   };
 
-  const deleteSubject = (id) => {
-    setSubjects((prev) => prev.filter((s) => s.id !== id));
-    setNotes((prev) => prev.filter((n) => n.subjectId !== id));
-    setFlashcards((prev) => prev.filter((c) => c.subjectId !== id));
-    setQuizzes((prev) => prev.filter((q) => q.subjectId !== id));
-    setPracticeExercises((prev) => prev.filter((p) => p.subjectId !== id));
+  const updateSubject = async (id, { name, description, icon, color }) => {
+    const payload = {
+      name: name !== undefined ? name.trim() : undefined,
+
+      description: description !== undefined ? description : undefined,
+
+      icon: icon !== undefined ? icon : undefined,
+
+      color: color !== undefined ? color : undefined,
+    };
+
+    const updatedSubject = await updateSubjectApi(id, payload);
+
+    const normalizedSubject = normalizeSubject(
+      updatedSubject,
+      subjects.findIndex((subject) => String(subject.id) === String(id)),
+    );
+
+    setSubjects((prev) =>
+      prev.map((subject) =>
+        String(subject.id) === String(id) ? normalizedSubject : subject,
+      ),
+    );
+
+    return normalizedSubject;
   };
 
-  // ---------- notes ----------
+  // ---------- delete subject ----------
+
+  const deleteSubject = async (id) => {
+    await deleteSubjectApi(id);
+
+    setSubjects((prev) => prev.filter((subject) => subject.id !== id));
+
+    // Clear locally-held related study assets.
+    // These will eventually be replaced by their
+    // own API-backed contexts/services.
+    setNotes((prev) => prev.filter((note) => note.subjectId !== id));
+
+    setFlashcards((prev) => prev.filter((card) => card.subjectId !== id));
+
+    setQuizzes((prev) => prev.filter((quiz) => quiz.subjectId !== id));
+
+    setPracticeExercises((prev) =>
+      prev.filter((practice) => practice.subjectId !== id),
+    );
+  };
+
+  // ==================================================
+  // NOTES
+  // ==================================================
+
   const addNote = ({ subjectId, title, content }) => {
     const note = {
       id: nextId(),
@@ -76,60 +220,108 @@ export function StudyDataProvider({ children }) {
       content,
       createdAt: Date.now(),
     };
+
     setNotes((prev) => [note, ...prev]);
+
     return note;
   };
 
   const deleteNote = (id) =>
-    setNotes((prev) => prev.filter((n) => n.id !== id));
+    setNotes((prev) => prev.filter((note) => note.id !== id));
 
-  // ---------- flashcards ----------
+  // ==================================================
+  // FLASHCARDS
+  // ==================================================
+
   const addFlashcard = ({ subjectId, front, back }) => {
-    const card = { id: nextId(), subjectId: subjectId ?? null, front, back };
+    const card = {
+      id: nextId(),
+      subjectId: subjectId ?? null,
+      front,
+      back,
+    };
+
     setFlashcards((prev) => [card, ...prev]);
+
     return card;
   };
 
   const deleteFlashcard = (id) =>
-    setFlashcards((prev) => prev.filter((c) => c.id !== id));
+    setFlashcards((prev) => prev.filter((card) => card.id !== id));
 
-  // ---------- quizzes ----------
+  // ==================================================
+  // QUIZZES
+  // ==================================================
+
   const addQuiz = ({ subjectId, title, questions }) => {
     const quiz = {
       id: nextId(),
       subjectId: subjectId ?? null,
       title,
-      questions: questions.map((q, i) => ({ id: i + 1, ...q })),
+      questions: questions.map((question, index) => ({
+        id: index + 1,
+        ...question,
+      })),
     };
+
     setQuizzes((prev) => [quiz, ...prev]);
+
     return quiz;
   };
 
   const deleteQuiz = (id) =>
-    setQuizzes((prev) => prev.filter((q) => q.id !== id));
+    setQuizzes((prev) => prev.filter((quiz) => quiz.id !== id));
 
-  // ---------- tasks (daily quests) ----------
+  // ==================================================
+  // TASKS
+  // ==================================================
+
   const addTask = (title, time = "15 MIN") =>
-    setTasks((prev) => [...prev, { id: nextId(), title, time, done: false }]);
+    setTasks((prev) => [
+      ...prev,
+      {
+        id: nextId(),
+        title,
+        time,
+        done: false,
+      },
+    ]);
 
   const toggleTask = (id) =>
     setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
+      prev.map((task) =>
+        task.id === id
+          ? {
+              ...task,
+              done: !task.done,
+            }
+          : task,
+      ),
     );
 
   const deleteTask = (id) =>
-    setTasks((prev) => prev.filter((t) => t.id !== id));
+    setTasks((prev) => prev.filter((task) => task.id !== id));
 
-  // ---------- practice ----------
+  // ==================================================
+  // PRACTICE
+  // ==================================================
+
   const togglePracticeComplete = (id) =>
     setPracticeExercises((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, completed: !p.completed } : p)),
+      prev.map((practice) =>
+        practice.id === id
+          ? {
+              ...practice,
+              completed: !practice.completed,
+            }
+          : practice,
+      ),
     );
 
-  // ---------- upload -> study assets ----------
-  // Stands in for the "AI Parser" flow from the design reference. There is
-  // no AI/backend endpoint wired up yet, so this just turns an uploaded
-  // file name into a starter note + task, clearly local/placeholder content.
+  // ==================================================
+  // UPLOAD
+  // ==================================================
+
   const generateAssetsFromUpload = ({ fileName, subjectId }) => {
     const baseTitle = fileName.replace(/\.[^/.]+$/, "") || "Uploaded Document";
 
@@ -144,31 +336,46 @@ export function StudyDataProvider({ children }) {
     return { note };
   };
 
-  const value = useMemo(
-    () => ({
-      subjects,
-      notes,
-      flashcards,
-      quizzes,
-      tasks,
-      practiceExercises,
-      addSubject,
-      deleteSubject,
-      addNote,
-      deleteNote,
-      addFlashcard,
-      deleteFlashcard,
-      addQuiz,
-      deleteQuiz,
-      addTask,
-      toggleTask,
-      deleteTask,
-      togglePracticeComplete,
-      generateAssetsFromUpload,
-    }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [subjects, notes, flashcards, quizzes, tasks, practiceExercises],
-  );
+  // ==================================================
+  // CONTEXT VALUE
+  // ==================================================
+
+  const value = {
+    subjects,
+    subjectsLoading,
+    subjectsError,
+    loadSubjects,
+
+    addSubject,
+    updateSubject,
+    deleteSubject,
+
+    notes,
+    flashcards,
+    quizzes,
+    tasks,
+    practiceExercises,
+
+    addSubject,
+    deleteSubject,
+
+    addNote,
+    deleteNote,
+
+    addFlashcard,
+    deleteFlashcard,
+
+    addQuiz,
+    deleteQuiz,
+
+    addTask,
+    toggleTask,
+    deleteTask,
+
+    togglePracticeComplete,
+
+    generateAssetsFromUpload,
+  };
 
   return (
     <StudyDataContext.Provider value={value}>
@@ -179,9 +386,11 @@ export function StudyDataProvider({ children }) {
 
 export function useStudyData() {
   const ctx = useContext(StudyDataContext);
+
   if (!ctx) {
     throw new Error("useStudyData must be used within a StudyDataProvider");
   }
+
   return ctx;
 }
 

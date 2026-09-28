@@ -100,5 +100,3 @@ export async function handleApiResponse(
 
     return data;
 }
-
-export { API_BASE_URL };

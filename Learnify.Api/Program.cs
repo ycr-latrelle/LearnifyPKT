@@ -3,6 +3,7 @@ using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Firestore;
 using Learnify.Api.Services.Authentication;
 using Resend;
+using Learnify.Api.Services.Study;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -114,6 +115,20 @@ builder.Services.AddAuthentication("Firebase")
     );
 
 builder.Services.AddAuthorization();
+
+// ========================================
+// Study Services
+// ========================================
+
+builder.Services.AddScoped<
+    ISubjectService,
+    SubjectService
+>();
+
+builder.Services.AddScoped<
+    INoteService,
+    NoteService
+>();
 
 // ========================================
 // Build Application
