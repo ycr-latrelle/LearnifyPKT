@@ -18,7 +18,8 @@ builder.Services.AddCors(options =>
         policy
             .WithOrigins(
                 "http://localhost:5173",
-                "https://learnifypkt.netlify.app"
+                "https://learnifypkt.netlify.app",
+                "https://learnify-pkt.vercel.app"
             )
             .AllowAnyHeader()
             .AllowAnyMethod();
