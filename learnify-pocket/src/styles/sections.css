@@ -995,6 +995,26 @@
     flex-wrap: wrap;
 }
 
+/*
+   When form-actions lives inside the modal scrollable body,
+   pin it to the bottom so it is never clipped.
+*/
+.pixel-modal__body .form-actions {
+    position: sticky;
+    bottom: 0;
+
+    z-index: 3;
+
+    margin: 0.5rem -0.25rem 0;
+    padding: 0.75rem 0.25rem 0.25rem;
+
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        var(--db-surface) 25%
+    );
+}
+
 .pixel-button--ghost {
     background-color: var(--db-surface-alt);
     color: var(--db-text);
@@ -1550,6 +1570,22 @@
     .form-actions > button {
         flex: 1;
         min-width: 0;
+    }
+
+    .pixel-modal__body .form-actions {
+        margin-top: 0.625rem;
+
+        padding-top: 0.875rem;
+
+        padding-bottom:
+            calc(
+                0.25rem +
+                env(safe-area-inset-bottom)
+            );
+    }
+
+    .pixel-modal__body .form-actions > button {
+        min-height: 2.75rem;
     }
 
 
