@@ -1,18 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-
 import { onAuthStateChanged, signOut } from "firebase/auth";
-
 import { auth } from "../config/firebase";
+import { authorizedFetch } from "../services/apiClient";
 
 const AuthContext = createContext(null);
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-console.log("AuthContext API_BASE_URL:", API_BASE_URL);
-
-if (!API_BASE_URL) {
-  throw new Error("VITE_API_BASE_URL is not configured.");
-}
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
