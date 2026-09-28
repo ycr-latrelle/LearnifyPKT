@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Learnify.Api.DTOs.AI;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Learnify.Api.Services.AI;
@@ -12,6 +13,7 @@ public class OpenRouterStudyService
 {
     private readonly HttpClient _httpClient;
     private readonly AIServiceOptions _options;
+    private readonly ILogger<OpenRouterStudyService> _logger;
 
     private static readonly JsonSerializerOptions
         JsonOptions =
@@ -22,12 +24,12 @@ public class OpenRouterStudyService
 
     public OpenRouterStudyService(
         HttpClient httpClient,
-        IOptions<AIServiceOptions> options)
+        IOptions<AIServiceOptions> options,
+        ILogger<OpenRouterStudyService> logger)
     {
         _httpClient = httpClient;
-
-        _options =
-            options.Value;
+        _options = options.Value;
+        _logger = logger;
     }
 
     // ==================================================
@@ -70,6 +72,13 @@ public class OpenRouterStudyService
         {
             throw new InvalidOperationException(
                 "OpenRouter model is missing.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+            _options.BaseUrl))
+        {
+            throw new InvalidOperationException(
+                "OpenRouter base URL is missing.");
         }
 
         // --------------------------------------------------
@@ -189,7 +198,7 @@ public class OpenRouterStudyService
 
         httpRequest.Headers.TryAddWithoutValidation(
             "HTTP-Referer",
-            "https://learnifypkt.vercel.app");
+            "https://learnify-pkt.vercel.app");
 
         httpRequest.Headers.TryAddWithoutValidation(
             "X-Title",
@@ -206,6 +215,11 @@ public class OpenRouterStudyService
         // Call OpenRouter
         // --------------------------------------------------
 
+        _logger.LogInformation(
+            "Starting OpenRouter study generation. Model: {Model}, BaseUrl: {BaseUrl}",
+            _options.Model,
+            _options.BaseUrl);
+
         using var response =
             await _httpClient.SendAsync(
                 httpRequest);
@@ -214,12 +228,39 @@ public class OpenRouterStudyService
             await response.Content
                 .ReadAsStringAsync();
 
+        // --------------------------------------------------
+        // Handle OpenRouter errors
+        // --------------------------------------------------
+
         if (!response.IsSuccessStatusCode)
         {
+            var statusCode =
+                (int)response.StatusCode;
+
+            var statusName =
+                response.StatusCode.ToString();
+
+            var truncatedResponse =
+                Truncate(
+                    responseBody,
+                    4000);
+
+            var providerError =
+                ExtractOpenRouterErrorMessage(
+                    responseBody);
+
+            _logger.LogError(
+                "OpenRouter request failed. Status: {StatusCode} {StatusName}. Model: {Model}. Provider message: {ProviderMessage}. Raw response: {ResponseBody}",
+                statusCode,
+                statusName,
+                _options.Model,
+                providerError,
+                truncatedResponse);
+
             throw new InvalidOperationException(
-                $"OpenRouter returned {(int)response.StatusCode} " +
-                $"{response.StatusCode}. " +
-                $"Response: {Truncate(responseBody, 2000)}");
+                $"OpenRouter returned {statusCode} " +
+                $"{statusName}. " +
+                $"Response: {truncatedResponse}");
         }
 
         // --------------------------------------------------
@@ -239,6 +280,11 @@ public class OpenRouterStudyService
         }
         catch (JsonException ex)
         {
+            _logger.LogError(
+                ex,
+                "OpenRouter returned an invalid API response. Raw response: {ResponseBody}",
+                Truncate(responseBody, 4000));
+
             throw new InvalidOperationException(
                 "OpenRouter returned an invalid API response.",
                 ex);
@@ -254,6 +300,10 @@ public class OpenRouterStudyService
         if (string.IsNullOrWhiteSpace(
             content))
         {
+            _logger.LogError(
+                "OpenRouter returned no generated content. Raw response: {ResponseBody}",
+                Truncate(responseBody, 4000));
+
             throw new InvalidOperationException(
                 "OpenRouter returned no generated content.");
         }
@@ -269,6 +319,10 @@ public class OpenRouterStudyService
         if (string.IsNullOrWhiteSpace(
             cleanedJson))
         {
+            _logger.LogError(
+                "The AI returned content that was not valid JSON. AI response: {AIResponse}",
+                Truncate(content, 4000));
+
             throw new InvalidOperationException(
                 "The AI returned a response that was not valid JSON. " +
                 $"AI response: {Truncate(content, 1000)}");
@@ -291,6 +345,11 @@ public class OpenRouterStudyService
         }
         catch (JsonException ex)
         {
+            _logger.LogError(
+                ex,
+                "The AI returned JSON that did not match the expected study-material structure. AI response: {AIResponse}",
+                Truncate(cleanedJson, 4000));
+
             throw new InvalidOperationException(
                 "The AI returned JSON, but it did not match " +
                 "the expected study-material structure. " +
@@ -300,6 +359,9 @@ public class OpenRouterStudyService
 
         if (result is null)
         {
+            _logger.LogError(
+                "The AI generated an empty study response.");
+
             throw new InvalidOperationException(
                 "The AI generated an empty study response.");
         }
@@ -310,6 +372,13 @@ public class OpenRouterStudyService
 
         ValidateGeneratedResponse(
             result);
+
+        _logger.LogInformation(
+            "OpenRouter study generation completed successfully. " +
+            "Flashcards: {Flashcards}, Quiz: {Quiz}, Practice: {Practice}",
+            result.Flashcards.Count,
+            result.Quiz.Count,
+            result.Practice.Count);
 
         return result;
     }
@@ -592,6 +661,100 @@ public class OpenRouterStudyService
                     "A generated practice exercise is missing its instruction.");
             }
         }
+    }
+
+    // ==================================================
+    // OPENROUTER ERROR EXTRACTION
+    // ==================================================
+
+    private static string
+        ExtractOpenRouterErrorMessage(
+            string responseBody)
+    {
+        if (string.IsNullOrWhiteSpace(
+            responseBody))
+        {
+            return "No response body was returned.";
+        }
+
+        try
+        {
+            using var document =
+                JsonDocument.Parse(
+                    responseBody);
+
+            var root =
+                document.RootElement;
+
+            // ------------------------------------------
+            // Standard OpenRouter error format:
+            //
+            // {
+            //   "error": {
+            //      "message": "...",
+            //      "code": 402
+            //   }
+            // }
+            // ------------------------------------------
+
+            if (
+                root.TryGetProperty(
+                    "error",
+                    out var errorElement))
+            {
+                if (
+                    errorElement.ValueKind ==
+                    JsonValueKind.Object)
+                {
+                    var message =
+                        errorElement
+                            .TryGetProperty(
+                                "message",
+                                out var messageElement)
+                            ? messageElement
+                                .GetString()
+                            : null;
+
+                    var code =
+                        errorElement
+                            .TryGetProperty(
+                                "code",
+                                out var codeElement)
+                            ? codeElement.ToString()
+                            : null;
+
+                    if (
+                        !string.IsNullOrWhiteSpace(
+                            message))
+                    {
+                        if (
+                            !string.IsNullOrWhiteSpace(
+                                code))
+                        {
+                            return
+                                $"Code {code}: {message}";
+                        }
+
+                        return message;
+                    }
+                }
+
+                if (
+                    errorElement.ValueKind ==
+                    JsonValueKind.String)
+                {
+                    return
+                        errorElement.GetString()
+                        ?? responseBody;
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // Response was not JSON.
+        }
+
+        return responseBody;
     }
 
     // ==================================================
