@@ -10,6 +10,29 @@ import {
   deleteSubject as deleteSubjectApi,
 } from "../services/SubjectService";
 
+import {
+  getNotes as getNotesApi,
+  createNote as createNoteApi,
+  updateNote as updateNoteApi,
+  deleteNote as deleteNoteApi,
+} from "../services/NoteService";
+
+import {
+  getFlashcards as getFlashcardsApi,
+  createFlashcard as createFlashcardApi,
+  updateFlashcard as updateFlashcardApi,
+  deleteFlashcard as deleteFlashcardApi,
+} from "../services/FlashcardService";
+
+import {
+  getQuizzes as getQuizzesApi,
+  createQuiz as createQuizApi,
+  updateQuiz as updateQuizApi,
+  deleteQuiz as deleteQuizApi,
+} from "../services/QuizService";
+
+import { generateStudyFromFile } from "../services/StudyGenerationService";
+
 // ==================================================
 // STUDY DATA CONTEXT
 // ==================================================
@@ -36,36 +59,148 @@ const INITIAL_QUIZZES = [];
 const INITIAL_TASKS = [];
 const INITIAL_PRACTICE = [];
 
+// ==================================================
+// NORMALIZERS
+// ==================================================
+
 function normalizeSubject(subject, index = 0) {
   return {
     ...subject,
+
     id: subject.id,
+
     name: subject.name || "Untitled Subject",
+
     icon: subject.icon || "subjects",
+
     color: subject.color || colorForIndex(index),
   };
 }
 
+function normalizeNote(note, subjectId = null) {
+  return {
+    ...note,
+
+    id: note.id,
+
+    subjectId: note.subjectId ?? subjectId ?? null,
+
+    title: note.title || "Untitled Note",
+
+    content: note.content || "",
+
+    createdAt: note.createdAt ?? note.created_at ?? Date.now(),
+
+    updatedAt: note.updatedAt ?? note.updated_at ?? null,
+  };
+}
+
+function normalizeFlashcard(flashcard, subjectId = null) {
+  return {
+    ...flashcard,
+
+    id: flashcard.id,
+
+    subjectId: flashcard.subjectId ?? subjectId ?? null,
+
+    front: flashcard.front || "",
+
+    back: flashcard.back || "",
+
+    createdAt: flashcard.createdAt ?? flashcard.created_at ?? Date.now(),
+
+    updatedAt: flashcard.updatedAt ?? flashcard.updated_at ?? null,
+  };
+}
+
+function normalizeQuiz(quiz, subjectId = null) {
+  return {
+    ...quiz,
+
+    id: quiz.id,
+
+    subjectId: quiz.subjectId ?? subjectId ?? null,
+
+    title: quiz.title || "Untitled Quiz",
+
+    questions: Array.isArray(quiz.questions)
+      ? quiz.questions.map((question, index) => ({
+          ...question,
+
+          id: question.id ?? String(index + 1),
+
+          question: question.question || "",
+
+          options: Array.isArray(question.options)
+            ? question.options.map((option) => option ?? "")
+            : [],
+
+          correctAnswer: Number(question.correctAnswer ?? 0),
+
+          explanation: question.explanation || "",
+        }))
+      : [],
+
+    createdAt: quiz.createdAt ?? quiz.created_at ?? Date.now(),
+
+    updatedAt: quiz.updatedAt ?? quiz.updated_at ?? null,
+  };
+}
+
+// ==================================================
+// PROVIDER
+// ==================================================
+
 export function StudyDataProvider({ children }) {
+  // ==================================================
+  // STATE
+  // ==================================================
+
   const [subjects, setSubjects] = useState(INITIAL_SUBJECTS);
+
   const [notes, setNotes] = useState(INITIAL_NOTES);
+
   const [flashcards, setFlashcards] = useState(INITIAL_FLASHCARDS);
+
   const [quizzes, setQuizzes] = useState(INITIAL_QUIZZES);
+
   const [tasks, setTasks] = useState(INITIAL_TASKS);
+
   const [practiceExercises, setPracticeExercises] = useState(INITIAL_PRACTICE);
+
+  // ==================================================
+  // LOADING
+  // ==================================================
 
   const [subjectsLoading, setSubjectsLoading] = useState(true);
 
-  const [subjectsError, setSubjectsError] = useState("");
+  const [notesLoading, setNotesLoading] = useState(false);
+
+  const [flashcardsLoading, setFlashcardsLoading] = useState(false);
+
+  const [quizzesLoading, setQuizzesLoading] = useState(false);
 
   // ==================================================
-  // SUBJECTS API
+  // ERRORS
+  // ==================================================
+
+  const [subjectsError, setSubjectsError] = useState("");
+
+  const [notesError, setNotesError] = useState("");
+
+  const [flashcardsError, setFlashcardsError] = useState("");
+
+  const [quizzesError, setQuizzesError] = useState("");
+
+  // ==================================================
+  // LOAD SUBJECTS
   // ==================================================
 
   const loadSubjects = async () => {
     if (!auth.currentUser) {
       setSubjects([]);
       setSubjectsLoading(false);
+
       return;
     }
 
@@ -89,41 +224,342 @@ export function StudyDataProvider({ children }) {
     }
   };
 
+  // ==================================================
+  // LOAD NOTES
+  // ==================================================
+
+  const loadNotes = async () => {
+    if (!auth.currentUser) {
+      setNotes([]);
+      setNotesLoading(false);
+
+      return;
+    }
+
+    setNotesLoading(true);
+    setNotesError("");
+
+    try {
+      const subjectsData = await getSubjectsApi();
+
+      const normalizedSubjects = Array.isArray(subjectsData)
+        ? subjectsData.map((subject, index) => normalizeSubject(subject, index))
+        : [];
+
+      setSubjects(normalizedSubjects);
+
+      const subjectNoteResults = await Promise.all(
+        normalizedSubjects.map(async (subject) => {
+          const data = await getNotesApi(subject.id);
+
+          if (!Array.isArray(data)) {
+            return [];
+          }
+
+          return data.map((note) => normalizeNote(note, subject.id));
+        }),
+      );
+
+      setNotes(subjectNoteResults.flat());
+    } catch (error) {
+      console.error("Failed to load notes:", error);
+
+      setNotesError(error?.message || "Failed to load notes.");
+    } finally {
+      setNotesLoading(false);
+    }
+  };
+
+  // ==================================================
+  // LOAD FLASHCARDS
+  // ==================================================
+
+  const loadFlashcards = async () => {
+    if (!auth.currentUser) {
+      setFlashcards([]);
+      setFlashcardsLoading(false);
+
+      return;
+    }
+
+    setFlashcardsLoading(true);
+    setFlashcardsError("");
+
+    try {
+      const subjectsData = await getSubjectsApi();
+
+      const normalizedSubjects = Array.isArray(subjectsData)
+        ? subjectsData.map((subject, index) => normalizeSubject(subject, index))
+        : [];
+
+      setSubjects(normalizedSubjects);
+
+      const subjectFlashcardResults = await Promise.all(
+        normalizedSubjects.map(async (subject) => {
+          const data = await getFlashcardsApi(subject.id);
+
+          if (!Array.isArray(data)) {
+            return [];
+          }
+
+          return data.map((flashcard) =>
+            normalizeFlashcard(flashcard, subject.id),
+          );
+        }),
+      );
+
+      setFlashcards(subjectFlashcardResults.flat());
+    } catch (error) {
+      console.error("Failed to load flashcards:", error);
+
+      setFlashcardsError(error?.message || "Failed to load flashcards.");
+    } finally {
+      setFlashcardsLoading(false);
+    }
+  };
+
+  // ==================================================
+  // LOAD QUIZZES
+  // ==================================================
+
+  const loadQuizzes = async () => {
+    if (!auth.currentUser) {
+      setQuizzes([]);
+      setQuizzesLoading(false);
+
+      return;
+    }
+
+    setQuizzesLoading(true);
+    setQuizzesError("");
+
+    try {
+      const subjectsData = await getSubjectsApi();
+
+      const normalizedSubjects = Array.isArray(subjectsData)
+        ? subjectsData.map((subject, index) => normalizeSubject(subject, index))
+        : [];
+
+      setSubjects(normalizedSubjects);
+
+      const subjectQuizResults = await Promise.all(
+        normalizedSubjects.map(async (subject) => {
+          try {
+            const data = await getQuizzesApi(subject.id);
+
+            if (!Array.isArray(data)) {
+              return [];
+            }
+
+            return data.map((quiz) => normalizeQuiz(quiz, subject.id));
+          } catch (error) {
+            console.error(
+              `Failed to load quizzes for subject ${subject.id}:`,
+              error,
+            );
+
+            return [];
+          }
+        }),
+      );
+
+      setQuizzes(subjectQuizResults.flat());
+    } catch (error) {
+      console.error("Failed to load quizzes:", error);
+
+      setQuizzesError(error?.message || "Failed to load quizzes.");
+    } finally {
+      setQuizzesLoading(false);
+    }
+  };
+
+  // ==================================================
+  // AUTH INITIALIZATION
+  // ==================================================
+
   useEffect(() => {
     let isMounted = true;
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!isMounted) return;
-
-      if (!user) {
-        setSubjects([]);
-        setSubjectsError("");
-        setSubjectsLoading(false);
+      if (!isMounted) {
         return;
       }
 
+      // ------------------------------------------
+      // LOGGED OUT
+      // ------------------------------------------
+
+      if (!user) {
+        setSubjects([]);
+        setNotes([]);
+        setFlashcards([]);
+        setQuizzes([]);
+        setTasks([]);
+        setPracticeExercises([]);
+
+        setSubjectsError("");
+        setNotesError("");
+        setFlashcardsError("");
+        setQuizzesError("");
+
+        setSubjectsLoading(false);
+        setNotesLoading(false);
+        setFlashcardsLoading(false);
+        setQuizzesLoading(false);
+
+        return;
+      }
+
+      // ------------------------------------------
+      // LOGGED IN
+      // ------------------------------------------
+
       setSubjectsLoading(true);
+      setNotesLoading(true);
+      setFlashcardsLoading(true);
+      setQuizzesLoading(true);
+
       setSubjectsError("");
+      setNotesError("");
+      setFlashcardsError("");
+      setQuizzesError("");
 
       try {
-        const data = await getSubjectsApi();
+        // ----------------------------------------
+        // Load subjects
+        // ----------------------------------------
 
-        if (!isMounted) return;
+        const subjectsData = await getSubjectsApi();
 
-        const normalizedSubjects = Array.isArray(data)
-          ? data.map((subject, index) => normalizeSubject(subject, index))
+        if (!isMounted) {
+          return;
+        }
+
+        const normalizedSubjects = Array.isArray(subjectsData)
+          ? subjectsData.map((subject, index) =>
+              normalizeSubject(subject, index),
+            )
           : [];
 
         setSubjects(normalizedSubjects);
+
+        // ----------------------------------------
+        // Load notes
+        // ----------------------------------------
+
+        const subjectNoteResults = await Promise.all(
+          normalizedSubjects.map(async (subject) => {
+            try {
+              const subjectNotes = await getNotesApi(subject.id);
+
+              if (!Array.isArray(subjectNotes)) {
+                return [];
+              }
+
+              return subjectNotes.map((note) =>
+                normalizeNote(note, subject.id),
+              );
+            } catch (error) {
+              console.error(
+                `Failed to load notes for subject ${subject.id}:`,
+                error,
+              );
+
+              return [];
+            }
+          }),
+        );
+
+        if (!isMounted) {
+          return;
+        }
+
+        setNotes(subjectNoteResults.flat());
+
+        // ----------------------------------------
+        // Load flashcards
+        // ----------------------------------------
+
+        const subjectFlashcardResults = await Promise.all(
+          normalizedSubjects.map(async (subject) => {
+            try {
+              const subjectFlashcards = await getFlashcardsApi(subject.id);
+
+              if (!Array.isArray(subjectFlashcards)) {
+                return [];
+              }
+
+              return subjectFlashcards.map((flashcard) =>
+                normalizeFlashcard(flashcard, subject.id),
+              );
+            } catch (error) {
+              console.error(
+                `Failed to load flashcards for subject ${subject.id}:`,
+                error,
+              );
+
+              return [];
+            }
+          }),
+        );
+
+        if (!isMounted) {
+          return;
+        }
+
+        setFlashcards(subjectFlashcardResults.flat());
+
+        // ----------------------------------------
+        // Load quizzes
+        // ----------------------------------------
+
+        const subjectQuizResults = await Promise.all(
+          normalizedSubjects.map(async (subject) => {
+            try {
+              const subjectQuizzes = await getQuizzesApi(subject.id);
+
+              if (!Array.isArray(subjectQuizzes)) {
+                return [];
+              }
+
+              return subjectQuizzes.map((quiz) =>
+                normalizeQuiz(quiz, subject.id),
+              );
+            } catch (error) {
+              console.error(
+                `Failed to load quizzes for subject ${subject.id}:`,
+                error,
+              );
+
+              return [];
+            }
+          }),
+        );
+
+        if (!isMounted) {
+          return;
+        }
+
+        setQuizzes(subjectQuizResults.flat());
       } catch (error) {
-        if (!isMounted) return;
+        if (!isMounted) {
+          return;
+        }
 
-        console.error("Failed to load subjects:", error);
+        console.error("Failed to load study data:", error);
 
-        setSubjectsError(error?.message || "Failed to load subjects.");
+        const message = error?.message || "Failed to load study data.";
+
+        setSubjectsError(message);
+        setNotesError(message);
+        setFlashcardsError(message);
+        setQuizzesError(message);
       } finally {
         if (isMounted) {
           setSubjectsLoading(false);
+          setNotesLoading(false);
+          setFlashcardsLoading(false);
+          setQuizzesLoading(false);
         }
       }
     });
@@ -134,7 +570,9 @@ export function StudyDataProvider({ children }) {
     };
   }, []);
 
-  // ---------- create subject ----------
+  // ==================================================
+  // SUBJECTS
+  // ==================================================
 
   const addSubject = async ({
     name,
@@ -146,8 +584,11 @@ export function StudyDataProvider({ children }) {
 
     const payload = {
       name: name.trim(),
+
       description: description || null,
+
       icon: icon || "subjects",
+
       color: fallbackColor,
     };
 
@@ -173,9 +614,13 @@ export function StudyDataProvider({ children }) {
 
     const updatedSubject = await updateSubjectApi(id, payload);
 
+    const subjectIndex = subjects.findIndex(
+      (subject) => String(subject.id) === String(id),
+    );
+
     const normalizedSubject = normalizeSubject(
       updatedSubject,
-      subjects.findIndex((subject) => String(subject.id) === String(id)),
+      subjectIndex >= 0 ? subjectIndex : 0,
     );
 
     setSubjects((prev) =>
@@ -187,24 +632,27 @@ export function StudyDataProvider({ children }) {
     return normalizedSubject;
   };
 
-  // ---------- delete subject ----------
-
   const deleteSubject = async (id) => {
     await deleteSubjectApi(id);
 
-    setSubjects((prev) => prev.filter((subject) => subject.id !== id));
+    setSubjects((prev) =>
+      prev.filter((subject) => String(subject.id) !== String(id)),
+    );
 
-    // Clear locally-held related study assets.
-    // These will eventually be replaced by their
-    // own API-backed contexts/services.
-    setNotes((prev) => prev.filter((note) => note.subjectId !== id));
+    setNotes((prev) =>
+      prev.filter((note) => String(note.subjectId) !== String(id)),
+    );
 
-    setFlashcards((prev) => prev.filter((card) => card.subjectId !== id));
+    setFlashcards((prev) =>
+      prev.filter((card) => String(card.subjectId) !== String(id)),
+    );
 
-    setQuizzes((prev) => prev.filter((quiz) => quiz.subjectId !== id));
+    setQuizzes((prev) =>
+      prev.filter((quiz) => String(quiz.subjectId) !== String(id)),
+    );
 
     setPracticeExercises((prev) =>
-      prev.filter((practice) => practice.subjectId !== id),
+      prev.filter((practice) => String(practice.subjectId) !== String(id)),
     );
   };
 
@@ -212,65 +660,296 @@ export function StudyDataProvider({ children }) {
   // NOTES
   // ==================================================
 
-  const addNote = ({ subjectId, title, content }) => {
-    const note = {
-      id: nextId(),
-      subjectId: subjectId ?? null,
-      title,
-      content,
-      createdAt: Date.now(),
-    };
+  const addNote = async ({ subjectId, title, content }) => {
+    if (!subjectId) {
+      throw new Error("A subject is required.");
+    }
 
-    setNotes((prev) => [note, ...prev]);
+    const trimmedTitle = title?.trim();
 
-    return note;
+    const trimmedContent = content?.trim();
+
+    if (!trimmedTitle) {
+      throw new Error("Note title is required.");
+    }
+
+    if (!trimmedContent) {
+      throw new Error("Note content is required.");
+    }
+
+    const createdNote = await createNoteApi(subjectId, {
+      title: trimmedTitle,
+      content: trimmedContent,
+    });
+
+    const normalizedNote = normalizeNote(createdNote, subjectId);
+
+    setNotes((prev) => [normalizedNote, ...prev]);
+
+    return normalizedNote;
   };
 
-  const deleteNote = (id) =>
-    setNotes((prev) => prev.filter((note) => note.id !== id));
+  const updateNote = async (id, { subjectId, title, content }) => {
+    const existingNote = notes.find((note) => String(note.id) === String(id));
+
+    const resolvedSubjectId = subjectId ?? existingNote?.subjectId;
+
+    if (!resolvedSubjectId) {
+      throw new Error("A subject is required before updating a note.");
+    }
+
+    const payload = {
+      title: title !== undefined ? title.trim() : undefined,
+
+      content: content !== undefined ? content : undefined,
+    };
+
+    try {
+      const updatedNote = await updateNoteApi(resolvedSubjectId, id, payload);
+
+      const normalizedNote = normalizeNote(updatedNote, resolvedSubjectId);
+
+      setNotes((prev) =>
+        prev.map((note) =>
+          String(note.id) === String(id) ? normalizedNote : note,
+        ),
+      );
+
+      return normalizedNote;
+    } catch (error) {
+      console.error("Failed to update note:", error);
+
+      throw error;
+    }
+  };
+
+  const deleteNote = async (id) => {
+    const existingNote = notes.find((note) => String(note.id) === String(id));
+
+    if (!existingNote) {
+      return;
+    }
+
+    if (!existingNote.subjectId) {
+      throw new Error("Cannot delete note because its subject is missing.");
+    }
+
+    try {
+      await deleteNoteApi(existingNote.subjectId, id);
+
+      setNotes((prev) => prev.filter((note) => String(note.id) !== String(id)));
+    } catch (error) {
+      console.error("Failed to delete note:", error);
+
+      throw error;
+    }
+  };
 
   // ==================================================
   // FLASHCARDS
   // ==================================================
 
-  const addFlashcard = ({ subjectId, front, back }) => {
-    const card = {
-      id: nextId(),
-      subjectId: subjectId ?? null,
-      front,
-      back,
-    };
+  const addFlashcard = async ({ subjectId, front, back }) => {
+    if (!subjectId) {
+      throw new Error("A subject is required.");
+    }
 
-    setFlashcards((prev) => [card, ...prev]);
+    const trimmedFront = front?.trim();
 
-    return card;
+    const trimmedBack = back?.trim();
+
+    if (!trimmedFront) {
+      throw new Error("Flashcard front is required.");
+    }
+
+    if (!trimmedBack) {
+      throw new Error("Flashcard back is required.");
+    }
+
+    const createdFlashcard = await createFlashcardApi(subjectId, {
+      front: trimmedFront,
+      back: trimmedBack,
+    });
+
+    const normalizedFlashcard = normalizeFlashcard(createdFlashcard, subjectId);
+
+    setFlashcards((prev) => [normalizedFlashcard, ...prev]);
+
+    return normalizedFlashcard;
   };
 
-  const deleteFlashcard = (id) =>
-    setFlashcards((prev) => prev.filter((card) => card.id !== id));
+  const updateFlashcard = async ({ id, subjectId, front, back }) => {
+    if (!subjectId) {
+      throw new Error("A subject is required before updating a flashcard.");
+    }
+
+    if (!id) {
+      throw new Error("A flashcard ID is required before updating.");
+    }
+
+    const updatedFlashcard = await updateFlashcardApi(
+      String(subjectId),
+      String(id),
+      {
+        front: front?.trim() ?? "",
+
+        back: back?.trim() ?? "",
+      },
+    );
+
+    const normalizedFlashcard = normalizeFlashcard(updatedFlashcard, subjectId);
+
+    setFlashcards((prev) =>
+      prev.map((flashcard) =>
+        String(flashcard.id) === String(id) ? normalizedFlashcard : flashcard,
+      ),
+    );
+
+    return normalizedFlashcard;
+  };
+
+  const deleteFlashcard = async (id) => {
+    const existingFlashcard = flashcards.find(
+      (card) => String(card.id) === String(id),
+    );
+
+    if (!existingFlashcard) {
+      return;
+    }
+
+    if (!existingFlashcard.subjectId) {
+      throw new Error(
+        "Cannot delete flashcard because its subject is missing.",
+      );
+    }
+
+    try {
+      await deleteFlashcardApi(existingFlashcard.subjectId, id);
+
+      setFlashcards((prev) =>
+        prev.filter((card) => String(card.id) !== String(id)),
+      );
+    } catch (error) {
+      console.error("Failed to delete flashcard:", error);
+
+      throw error;
+    }
+  };
 
   // ==================================================
   // QUIZZES
   // ==================================================
 
-  const addQuiz = ({ subjectId, title, questions }) => {
-    const quiz = {
-      id: nextId(),
-      subjectId: subjectId ?? null,
-      title,
-      questions: questions.map((question, index) => ({
-        id: index + 1,
-        ...question,
+  const addQuiz = async ({ subjectId, title, questions }) => {
+    if (!subjectId) {
+      throw new Error("A subject is required.");
+    }
+
+    const trimmedTitle = title?.trim();
+
+    if (!trimmedTitle) {
+      throw new Error("Quiz title is required.");
+    }
+
+    if (!Array.isArray(questions) || questions.length === 0) {
+      throw new Error("A quiz must contain at least one question.");
+    }
+
+    const payload = {
+      title: trimmedTitle,
+
+      questions: questions.map((question) => ({
+        question: question.question?.trim() || "",
+
+        options: Array.isArray(question.options)
+          ? question.options.map((option) => option?.trim() || "")
+          : [],
+
+        correctAnswer: Number(question.correctAnswer ?? 0),
+
+        explanation: question.explanation?.trim() || "",
       })),
     };
 
-    setQuizzes((prev) => [quiz, ...prev]);
+    const createdQuiz = await createQuizApi(subjectId, payload);
 
-    return quiz;
+    const normalizedQuiz = normalizeQuiz(createdQuiz, subjectId);
+
+    setQuizzes((prev) => [normalizedQuiz, ...prev]);
+
+    return normalizedQuiz;
   };
 
-  const deleteQuiz = (id) =>
-    setQuizzes((prev) => prev.filter((quiz) => quiz.id !== id));
+  const updateQuiz = async (id, { subjectId, title, questions }) => {
+    const existingQuiz = quizzes.find((quiz) => String(quiz.id) === String(id));
+
+    const resolvedSubjectId = subjectId ?? existingQuiz?.subjectId;
+
+    if (!resolvedSubjectId) {
+      throw new Error("A subject is required before updating a quiz.");
+    }
+
+    if (!id) {
+      throw new Error("A quiz ID is required before updating.");
+    }
+
+    const payload = {
+      title: title !== undefined ? title.trim() : undefined,
+
+      questions:
+        questions !== undefined
+          ? questions.map((question) => ({
+              id: question.id ?? undefined,
+
+              question: question.question?.trim() || "",
+
+              options: Array.isArray(question.options)
+                ? question.options.map((option) => option?.trim() || "")
+                : [],
+
+              correctAnswer: Number(question.correctAnswer ?? 0),
+
+              explanation: question.explanation?.trim() || "",
+            }))
+          : undefined,
+    };
+
+    const updatedQuiz = await updateQuizApi(resolvedSubjectId, id, payload);
+
+    const normalizedQuiz = normalizeQuiz(updatedQuiz, resolvedSubjectId);
+
+    setQuizzes((prev) =>
+      prev.map((quiz) =>
+        String(quiz.id) === String(id) ? normalizedQuiz : quiz,
+      ),
+    );
+
+    return normalizedQuiz;
+  };
+
+  const deleteQuiz = async (id) => {
+    const existingQuiz = quizzes.find((quiz) => String(quiz.id) === String(id));
+
+    if (!existingQuiz) {
+      return;
+    }
+
+    if (!existingQuiz.subjectId) {
+      throw new Error("Cannot delete quiz because its subject is missing.");
+    }
+
+    try {
+      await deleteQuizApi(existingQuiz.subjectId, id);
+
+      setQuizzes((prev) =>
+        prev.filter((quiz) => String(quiz.id) !== String(id)),
+      );
+    } catch (error) {
+      console.error("Failed to delete quiz:", error);
+
+      throw error;
+    }
+  };
 
   // ==================================================
   // TASKS
@@ -279,6 +958,7 @@ export function StudyDataProvider({ children }) {
   const addTask = (title, time = "15 MIN") =>
     setTasks((prev) => [
       ...prev,
+
       {
         id: nextId(),
         title,
@@ -319,21 +999,149 @@ export function StudyDataProvider({ children }) {
     );
 
   // ==================================================
-  // UPLOAD
+  // UPLOAD / AI GENERATION
   // ==================================================
 
-  const generateAssetsFromUpload = ({ fileName, subjectId }) => {
-    const baseTitle = fileName.replace(/\.[^/.]+$/, "") || "Uploaded Document";
+  const generateAssetsFromUpload = async ({
+    file,
+    subjectId,
+    instructions = "",
+  }) => {
+    if (!file) {
+      throw new Error("A study file is required.");
+    }
 
-    const note = addNote({
-      subjectId,
-      title: `Summary: ${baseTitle}`,
-      content: `Placeholder summary generated from "${fileName}". Once the AI/backend parsing endpoint is connected, this will contain real generated notes.`,
-    });
+    if (!subjectId) {
+      throw new Error("A subject is required.");
+    }
 
-    addTask(`Review notes from ${baseTitle}`, "15 MIN");
+    try {
+      // ==================================================
+      // 1. GENERATE STUDY MATERIALS
+      // ==================================================
 
-    return { note };
+      const generatedData = await generateStudyFromFile({
+        subjectId: String(subjectId),
+        file,
+        instructions,
+      });
+
+      console.log("Study materials generated successfully:", generatedData);
+
+      // ==================================================
+      // 2. SAVE NOTE
+      // ==================================================
+
+      let savedNote = null;
+
+      if (
+        generatedData.noteTitle?.trim() &&
+        generatedData.noteContent?.trim()
+      ) {
+        savedNote = await addNote({
+          subjectId: String(subjectId),
+
+          title: generatedData.noteTitle.trim(),
+
+          content: generatedData.noteContent.trim(),
+        });
+      }
+
+      // ==================================================
+      // 3. SAVE FLASHCARDS
+      // ==================================================
+
+      const savedFlashcards = [];
+
+      if (Array.isArray(generatedData.flashcards)) {
+        for (const flashcard of generatedData.flashcards) {
+          if (!flashcard?.front?.trim() || !flashcard?.back?.trim()) {
+            continue;
+          }
+
+          const savedFlashcard = await addFlashcard({
+            subjectId: String(subjectId),
+
+            front: flashcard.front.trim(),
+
+            back: flashcard.back.trim(),
+          });
+
+          savedFlashcards.push(savedFlashcard);
+        }
+      }
+
+      // ==================================================
+      // 4. SAVE QUIZ
+      // ==================================================
+
+      let savedQuiz = null;
+
+      if (Array.isArray(generatedData.quiz) && generatedData.quiz.length > 0) {
+        const baseTitle =
+          file.name?.replace(/\.[^/.]+$/, "").trim() || "Generated Study";
+
+        const quizQuestions = generatedData.quiz
+          .filter(
+            (question) =>
+              question?.question?.trim() &&
+              Array.isArray(question.options) &&
+              question.options.length === 4 &&
+              Number.isInteger(Number(question.correctAnswer)),
+          )
+          .map((question) => ({
+            question: question.question.trim(),
+
+            options: question.options.map((option) =>
+              String(option ?? "").trim(),
+            ),
+
+            correctAnswer: Number(question.correctAnswer),
+
+            explanation: question.explanation?.trim() || "",
+          }));
+
+        if (quizQuestions.length > 0) {
+          savedQuiz = await addQuiz({
+            subjectId: String(subjectId),
+
+            title: `${baseTitle} Quiz`,
+
+            questions: quizQuestions,
+          });
+        }
+      }
+
+      // ==================================================
+      // 5. PRACTICE
+      // ==================================================
+      //
+      // Practice persistence will be added after
+      // the Practice CRUD backend is implemented.
+      //
+
+      // ==================================================
+      // 6. RESULT
+      // ==================================================
+
+      const result = {
+        ...generatedData,
+
+        savedNote,
+
+        savedFlashcards,
+
+        savedQuiz,
+      };
+
+      console.log("Generated study materials saved:", result);
+
+      return result;
+    } catch (error) {
+      console.error("Failed to generate and save study materials:", error);
+
+      throw error;
+    }
   };
 
   // ==================================================
@@ -341,38 +1149,101 @@ export function StudyDataProvider({ children }) {
   // ==================================================
 
   const value = {
+    // ------------------------------------------
+    // Subjects
+    // ------------------------------------------
+
     subjects,
+
     subjectsLoading,
+
     subjectsError,
+
     loadSubjects,
 
     addSubject,
+
     updateSubject,
+
     deleteSubject,
+
+    // ------------------------------------------
+    // Notes
+    // ------------------------------------------
 
     notes,
-    flashcards,
-    quizzes,
-    tasks,
-    practiceExercises,
 
-    addSubject,
-    deleteSubject,
+    notesLoading,
+
+    notesError,
+
+    loadNotes,
 
     addNote,
+
+    updateNote,
+
     deleteNote,
 
+    // ------------------------------------------
+    // Flashcards
+    // ------------------------------------------
+
+    flashcards,
+
+    flashcardsLoading,
+
+    flashcardsError,
+
+    loadFlashcards,
+
     addFlashcard,
+
+    updateFlashcard,
+
     deleteFlashcard,
 
+    // ------------------------------------------
+    // Quizzes
+    // ------------------------------------------
+
+    quizzes,
+
+    quizzesLoading,
+
+    quizzesError,
+
+    loadQuizzes,
+
     addQuiz,
+
+    updateQuiz,
+
     deleteQuiz,
 
+    // ------------------------------------------
+    // Tasks
+    // ------------------------------------------
+
+    tasks,
+
     addTask,
+
     toggleTask,
+
     deleteTask,
 
+    // ------------------------------------------
+    // Practice
+    // ------------------------------------------
+
+    practiceExercises,
+
     togglePracticeComplete,
+
+    // ------------------------------------------
+    // AI Upload
+    // ------------------------------------------
 
     generateAssetsFromUpload,
   };
@@ -383,6 +1254,10 @@ export function StudyDataProvider({ children }) {
     </StudyDataContext.Provider>
   );
 }
+
+// ==================================================
+// HOOK
+// ==================================================
 
 export function useStudyData() {
   const ctx = useContext(StudyDataContext);

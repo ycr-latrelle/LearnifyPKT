@@ -1,0 +1,13 @@
+Java is a high-level programming language.
+
+Java uses object-oriented programming.
+
+A class is a blueprint for creating objects.
+
+An object is an instance of a class.
+
+Inheritance allows a class to acquire properties
+and methods from another class.
+
+Encapsulation means bundling data and methods
+inside a class.

@@ -655,21 +655,40 @@
 .quiz-option {
     width: 100%;
     min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+
     text-align: left;
     padding: 0.75rem;
+
     background-color: var(--db-surface);
     border: 2px solid var(--db-border);
     box-shadow: var(--db-shadow-sm);
+
     font-family: var(--font-pixel);
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--db-text);
+
     cursor: pointer;
     box-sizing: border-box;
+
     overflow-wrap: anywhere;
+
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.1s ease;
 }
 
-.quiz-option:active {
+.quiz-option:hover:not(:disabled) {
+    background-color: var(--db-surface-alt);
+}
+
+.quiz-option:active:not(:disabled) {
     transform: translate(2px, 2px);
     box-shadow: none;
 }
@@ -678,16 +697,120 @@
     cursor: default;
 }
 
+
+/*
+   Optional option letter / marker inside the button.
+   This works even when the current JSX does not include
+   a dedicated letter element.
+*/
+.quiz-option::first-letter {
+    font-weight: 900;
+}
+
+
+/* --------------------------------------------------------------------------
+   Quiz — selected answer
+   -------------------------------------------------------------------------- */
+
+/*
+   This is the important state.
+
+   The bright cyan background gives a strong visual indication that
+   the user has selected this answer but has NOT submitted yet.
+
+   The text explicitly becomes dark so it stays readable in dark mode.
+*/
+.quiz-option--selected {
+    background-color: #92eeff;
+    border-color: #091540;
+
+    color: #091540;
+
+    font-weight: 900;
+
+    box-shadow:
+        3px 3px 0 0 var(--db-border),
+        0 0 0 2px rgba(146, 238, 255, 0.35);
+}
+
+.quiz-option--selected:hover:not(:disabled) {
+    background-color: #92eeff;
+    border-color: #091540;
+    color: #091540;
+}
+
+.quiz-option--selected:active:not(:disabled) {
+    background-color: #92eeff;
+    border-color: #091540;
+    color: #091540;
+}
+
+/*
+   Protect against nested spans/text elements inheriting the wrong
+   dark-mode text color.
+*/
+.quiz-option--selected *,
+.quiz-option--selected:hover *,
+.quiz-option--selected:active * {
+    color: #091540;
+}
+
+
+/* --------------------------------------------------------------------------
+   Quiz — correct answer after submission
+   -------------------------------------------------------------------------- */
 .quiz-option--correct {
     background-color: #bbf7d0;
     border-color: #15803d;
+    color: #14532d;
+
+    font-weight: 900;
+
+    box-shadow:
+        3px 3px 0 0 var(--db-border);
 }
 
+.quiz-option--correct:hover,
+.quiz-option--correct:active {
+    background-color: #bbf7d0;
+    border-color: #15803d;
+    color: #14532d;
+}
+
+.quiz-option--correct * {
+    color: #14532d;
+}
+
+
+/* --------------------------------------------------------------------------
+   Quiz — incorrect answer after submission
+   -------------------------------------------------------------------------- */
 .quiz-option--incorrect {
     background-color: #fecdd3;
     border-color: var(--db-rose);
+    color: #881337;
+
+    font-weight: 900;
+
+    box-shadow:
+        3px 3px 0 0 var(--db-border);
 }
 
+.quiz-option--incorrect:hover,
+.quiz-option--incorrect:active {
+    background-color: #fecdd3;
+    border-color: var(--db-rose);
+    color: #881337;
+}
+
+.quiz-option--incorrect * {
+    color: #881337;
+}
+
+
+/* --------------------------------------------------------------------------
+   Quiz — explanation
+   -------------------------------------------------------------------------- */
 .quiz-explanation {
     padding: 0.625rem 0.75rem;
     background-color: var(--db-surface-alt);
@@ -699,6 +822,10 @@
     overflow-wrap: anywhere;
 }
 
+
+/* --------------------------------------------------------------------------
+   Quiz — result
+   -------------------------------------------------------------------------- */
 .quiz-result {
     display: flex;
     flex-direction: column;
@@ -1494,6 +1621,45 @@
         padding: 0.625rem;
     }
 
+    /*
+       Keep the selected state especially obvious on small screens.
+       The dark text is intentional so it stays readable in dark mode.
+    */
+    .quiz-option--selected {
+        background-color: #92eeff;
+        border-color: #091540;
+        color: #091540;
+
+        box-shadow:
+            3px 3px 0 0 var(--db-border),
+            0 0 0 2px rgba(146, 238, 255, 0.35);
+    }
+
+    .quiz-option--selected:hover:not(:disabled),
+    .quiz-option--selected:active:not(:disabled) {
+        background-color: #92eeff;
+        border-color: #091540;
+        color: #091540;
+    }
+
+    .quiz-option--correct {
+        background-color: #bbf7d0;
+        border-color: #15803d;
+        color: #14532d;
+    }
+
+    .quiz-option--incorrect {
+        background-color: #fecdd3;
+        border-color: var(--db-rose);
+        color: #881337;
+    }
+
+    .quiz-option--selected *,
+    .quiz-option--correct *,
+    .quiz-option--incorrect * {
+        color: inherit;
+    }
+
 
     /* --------------------------------------------------------------
        Progress
@@ -1781,6 +1947,33 @@
     .subject-edit-actions {
         gap: 0.5rem;
     }
+
+    /*
+       Extra compact quiz sizing for 320–380px phones.
+       The selected state still keeps dark text.
+    */
+    .quiz-option {
+        padding: 0.5625rem;
+        font-size: 0.625rem;
+    }
+
+    .quiz-option--selected {
+        background-color: #92eeff;
+        border-color: #091540;
+        color: #091540;
+    }
+
+    .quiz-option--correct {
+        background-color: #bbf7d0;
+        border-color: #15803d;
+        color: #14532d;
+    }
+
+    .quiz-option--incorrect {
+        background-color: #fecdd3;
+        border-color: var(--db-rose);
+        color: #881337;
+    }
 }
 
 
@@ -1804,5 +1997,14 @@
     .subject-floating-add {
         right: 0.875rem;
         bottom: calc(3.75rem + env(safe-area-inset-bottom));
+    }
+
+    /*
+       Keep quiz selection readable in landscape as well.
+    */
+    .quiz-option--selected {
+        background-color: #92eeff;
+        border-color: #091540;
+        color: #091540;
     }
 }

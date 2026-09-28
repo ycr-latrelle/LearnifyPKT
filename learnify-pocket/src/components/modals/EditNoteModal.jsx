@@ -1,23 +1,31 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Modal from "../shared/Modal";
 
-export default function AddNoteModal({
+export default function EditNoteModal({
+  note,
   subjects = [],
-  defaultSubjectId = null,
   onClose,
-  onCreate,
+  onUpdate,
 }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
-  const [subjectId, setSubjectId] = useState(
-    defaultSubjectId !== null && defaultSubjectId !== undefined
-      ? String(defaultSubjectId)
-      : "",
-  );
-
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!note) {
+      return;
+    }
+
+    setTitle(note.title ?? "");
+    setContent(note.content ?? "");
+    setError("");
+  }, [note]);
+
+  const subjectName =
+    subjects.find((subject) => String(subject.id) === String(note?.subjectId))
+      ?.name ?? "Unknown Subject";
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -41,38 +49,33 @@ export default function AddNoteModal({
       return;
     }
 
-    if (!subjectId) {
-      setError("Please select a subject.");
-      return;
-    }
-
     try {
       setIsSubmitting(true);
 
-      await onCreate({
+      await onUpdate(note.id, {
         title: trimmedTitle,
         content: trimmedContent,
-        subjectId: subjectId,
       });
 
       onClose();
     } catch (err) {
-      console.error("Failed to create note:", err);
+      console.error("Failed to update note:", err);
 
-      setError(err?.message || "Failed to save the note. Please try again.");
+      setError(err?.message || "Failed to update the note. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Modal title="Add Note" onClose={isSubmitting ? undefined : onClose}>
+    <Modal title="Edit Note" onClose={isSubmitting ? undefined : onClose}>
       <form onSubmit={handleSubmit}>
+        {/* Title */}
         <div className="pixel-field">
-          <label htmlFor="note-title">Title</label>
+          <label htmlFor="edit-note-title">Title</label>
 
           <input
-            id="note-title"
+            id="edit-note-title"
             type="text"
             className="pixel-input"
             placeholder="e.g. Chapter 4 Summary"
@@ -89,41 +92,30 @@ export default function AddNoteModal({
           />
         </div>
 
+        {/* Subject */}
         <div className="pixel-field">
-          <label htmlFor="note-subject">Subject</label>
+          <label htmlFor="edit-note-subject">Subject</label>
 
-          {subjects.length > 0 ? (
-            <select
-              id="note-subject"
-              className="pixel-select"
-              value={subjectId}
-              onChange={(event) => {
-                setSubjectId(event.target.value);
+          <input
+            id="edit-note-subject"
+            type="text"
+            className="pixel-input"
+            value={subjectName}
+            disabled
+            readOnly
+          />
 
-                if (error) {
-                  setError("");
-                }
-              }}
-              disabled={isSubmitting}
-            >
-              <option value="">Select a subject</option>
-
-              {subjects.map((subject) => (
-                <option key={subject.id} value={String(subject.id)}>
-                  {subject.name}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <p className="form-error">Create a subject before adding a note.</p>
-          )}
+          <small>
+            The subject cannot be changed after the note is created.
+          </small>
         </div>
 
+        {/* Content */}
         <div className="pixel-field">
-          <label htmlFor="note-content">Content</label>
+          <label htmlFor="edit-note-content">Content</label>
 
           <textarea
-            id="note-content"
+            id="edit-note-content"
             className="pixel-textarea"
             placeholder="Write your notes here..."
             value={content}
@@ -138,12 +130,14 @@ export default function AddNoteModal({
           />
         </div>
 
+        {/* Error */}
         {error && (
           <p className="form-error" role="alert">
             {error}
           </p>
         )}
 
+        {/* Actions */}
         <div className="form-actions">
           <button
             type="button"
@@ -157,9 +151,9 @@ export default function AddNoteModal({
           <button
             type="submit"
             className="pixel-button pixel-button--blue"
-            disabled={isSubmitting || subjects.length === 0}
+            disabled={isSubmitting}
           >
-            {isSubmitting ? "Saving..." : "Save Note"}
+            {isSubmitting ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </form>
