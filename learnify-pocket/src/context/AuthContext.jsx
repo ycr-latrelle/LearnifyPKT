@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+
 import { onAuthStateChanged, signOut } from "firebase/auth";
+
 import { auth } from "../config/firebase";
 import { authorizedFetch } from "../services/apiClient";
 
@@ -29,25 +31,18 @@ export const AuthProvider = ({ children }) => {
 
       try {
         /*
-         * Firebase restored the session.
-         *
-         * Get the current Firebase ID token.
-         */
-        const idToken = await firebaseUser.getIdToken();
-
-        /*
          * Ask the ASP.NET API for the
          * application user profile.
+         *
+         * authorizedFetch() automatically:
+         * - gets the Firebase ID token
+         * - adds Authorization header
+         * - refreshes the token on 401
          */
-        const response = await fetch(`${API_BASE_URL}/auth/me`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-        });
+        const response = await authorizedFetch("/auth/me");
 
         /*
-         * If the API rejects the token,
+         * If the API rejects the request,
          * do NOT immediately sign out Firebase.
          */
         if (!response.ok) {
@@ -111,14 +106,7 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      const idToken = await firebaseUser.getIdToken();
-
-      const response = await fetch(`${API_BASE_URL}/auth/me`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
+      const response = await authorizedFetch("/auth/me");
 
       if (!response.ok) {
         const errorText = await response.text();
